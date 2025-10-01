@@ -57,6 +57,8 @@ from .const import (
 MAX_TOOL_ITERATIONS = 6
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
+
     from homeassistant.config_entries import ConfigEntry, ConfigSubentry
 
 
@@ -106,36 +108,21 @@ class XAIBaseEntity(Entity):
                 reasoning_effort=reasoning_effort,
                 search_parameters=search_parameters,
                 tools=tools,
+                parallel_tool_calls=True,
                 store_messages=False,
             )
 
-            response = await chat_request.sample()
-            self._log_usage(chat_log, response)
+            (
+                final_response,
+                streamed_output,
+                streamed_tool_call,
+            ) = await self._async_stream_chat_response(chat_log, chat_request)
 
-            tool_calls = self._convert_tool_calls(list(response.tool_calls))
+            self._log_usage(chat_log, final_response)
 
-            assistant_content = conversation.AssistantContent(
-                agent_id=self.entity_id,
-                content=response.content or None,
-                thinking_content=getattr(response, "reasoning_content", None) or None,
-                tool_calls=tool_calls or None,
-                native=response,
-            )
-
-            if (
-                tool_calls
-                and not assistant_content.content
-                and not progress_message_sent
-            ):
+            if streamed_tool_call and not streamed_output and not progress_message_sent:
                 self._notify_chat_log_progress(chat_log)
                 progress_message_sent = True
-
-            self._notify_chat_log_assistant_delta(chat_log, assistant_content)
-
-            async for tool_result in chat_log.async_add_assistant_content(
-                assistant_content
-            ):
-                self._notify_chat_log_tool_result(chat_log, tool_result)
 
             if not chat_log.unresponded_tool_results:
                 break
@@ -361,6 +348,76 @@ class XAIBaseEntity(Entity):
                 "tool_result": tool_result.tool_result,
             },
         )
+
+    async def _async_stream_chat_response(
+        self,
+        chat_log: conversation.ChatLog,
+        chat_request: Any,
+    ) -> tuple[Any, bool, bool]:
+        """Stream the response from xAI and feed it into the chat log."""
+        final_response: Any | None = None
+        streamed_output = False
+        streamed_tool_call = False
+
+        async def _delta_stream(
+            request: Any = chat_request,
+        ) -> AsyncGenerator[dict[str, Any]]:
+            nonlocal final_response, streamed_output, streamed_tool_call
+            assistant_started = False
+
+            async for response, chunk in request.stream():
+                final_response = response
+
+                for choice in chunk.choices:
+                    emitted_delta = False
+
+                    if choice.content:
+                        if not assistant_started:
+                            yield {"role": "assistant"}
+                            assistant_started = True
+                        yield {"content": choice.content}
+                        streamed_output = True
+                        emitted_delta = True
+
+                    if choice.reasoning_content:
+                        if not assistant_started:
+                            yield {"role": "assistant"}
+                            assistant_started = True
+                        yield {"thinking_content": choice.reasoning_content}
+                        streamed_output = True
+                        emitted_delta = True
+
+                    if choice.tool_calls:
+                        tool_inputs = self._convert_tool_calls(list(choice.tool_calls))
+                        if tool_inputs:
+                            if not assistant_started:
+                                yield {"role": "assistant"}
+                                assistant_started = True
+                            yield {"tool_calls": tool_inputs}
+                            streamed_tool_call = True
+                            emitted_delta = True
+
+                    if (
+                        not assistant_started
+                        and choice.role == chat_pb2.MessageRole.ROLE_ASSISTANT
+                        and not emitted_delta
+                    ):
+                        yield {"role": "assistant"}
+                        assistant_started = True
+
+            if final_response is not None:
+                yield {"native": final_response}
+
+        async for _ in chat_log.async_add_delta_content_stream(
+            self.entity_id, _delta_stream()
+        ):
+            pass
+
+        if final_response is None:
+            msg = "xAI stream returned no response"
+            raise HomeAssistantError(msg)
+
+        return final_response, streamed_output, streamed_tool_call
 
     def _log_usage(self, chat_log: conversation.ChatLog, response: Any) -> None:
         """Record token usage statistics if available."""
