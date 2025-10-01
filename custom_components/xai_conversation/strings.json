@@ -1,0 +1,67 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "data": {
+          "api_key": "[%key:common::config_flow::data::api_key%]"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
+      "unknown": "[%key:common::config_flow::error::unknown%]"
+    },
+    "abort": {
+      "already_configured": "[%key:common::config_flow::abort::already_configured_service%]"
+    }
+  },
+  "config_subentries": {
+    "conversation": {
+      "initiate_flow": {
+        "user": "Add xAI conversation agent",
+        "reconfigure": "Reconfigure xAI conversation agent"
+      },
+      "entry_type": "Conversation agent",
+      "step": {
+        "init": {
+          "data": {
+            "name": "[%key:common::config_flow::data::name%]",
+            "prompt": "[%key:common::config_flow::data::prompt%]",
+            "llm_hass_api": "[%key:common::config_flow::data::llm_hass_api%]",
+            "recommended": "Use recommended settings"
+          },
+          "data_description": {
+            "prompt": "Instruct how the xAI model should respond. This can use templating."
+          }
+        },
+        "advanced": {
+          "title": "Advanced settings",
+          "data": {
+            "chat_model": "[%key:common::generic::model%]",
+            "max_tokens": "Maximum tokens to use in responses",
+            "temperature": "Temperature",
+            "top_p": "Top P",
+            "reasoning_effort": "Reasoning effort",
+            "live_search": "Enable live search"
+          },
+          "data_description": {
+            "live_search": "Allow the model to search the web for the latest information."
+          }
+        }
+      },
+      "abort": {
+        "entry_not_loaded": "Cannot configure while the entry is disabled.",
+        "reconfigure_successful": "[%key:common::config_flow::abort::reconfigure_successful%]"
+      }
+    }
+  },
+  "selector": {
+    "reasoning_effort": {
+      "options": {
+        "low": "[%key:common::state::low%]",
+        "medium": "[%key:common::state::medium%]",
+        "high": "[%key:common::state::high%]"
+      }
+    }
+  }
+}

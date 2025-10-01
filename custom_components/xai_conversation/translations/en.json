@@ -1,0 +1,39 @@
+{
+  "config": {
+    "error": {
+      "cannot_connect": "Unable to connect to xAI. Check your API key and try again.",
+      "unknown": "Unexpected error validating the xAI API key."
+    }
+  },
+  "config_subentries": {
+    "conversation": {
+      "step": {
+        "init": {
+          "data": {
+            "recommended": "Use recommended settings"
+          },
+          "data_description": {
+            "prompt": "Provide base instructions for the Grok model. Templates are supported."
+          }
+        },
+        "advanced": {
+          "title": "Advanced settings",
+          "data": {
+            "chat_model": "Model",
+            "max_tokens": "Maximum tokens",
+            "temperature": "Temperature",
+            "top_p": "Top P",
+            "reasoning_effort": "Reasoning effort",
+            "live_search": "Enable live search"
+          },
+          "data_description": {
+            "live_search": "Allow the xAI model to search the web before answering."
+          }
+        }
+      },
+      "abort": {
+        "entry_not_loaded": "Configure the integration while it is enabled."
+      }
+    }
+  }
+}

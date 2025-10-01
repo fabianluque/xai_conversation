@@ -1,0 +1,15 @@
+{
+  "domain": "xai_conversation",
+  "name": "xAI Conversation",
+  "version": "0.1.0",
+  "codeowners": ["@fabianluque"],
+  "config_flow": true,
+  "documentation": "https://github.com/fabianluque/xai-conversation",
+  "issue_tracker": "https://github.com/fabianluque/xai-conversation/issues",
+  "dependencies": ["conversation"],
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "requirements": [
+    "xai-sdk==1.2.0"
+  ]
+}

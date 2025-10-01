@@ -1,46 +1,60 @@
-# Notice
+# xAI Conversation for Home Assistant
 
-The component and platforms in this repository are not meant to be used by a
-user, but as a "blueprint" that custom component developers can build
-upon, to make more awesome stuff.
+Interact with xAI's Grok models directly from Home Assistant's Conversation platform. The integration uses the official [`xai-sdk`](https://pypi.org/project/xai-sdk/) to provide fast responses, optional reasoning, and live search enrichment while keeping configuration in the Home Assistant UI.
 
-HAVE FUN! 😎
+## ✨ Features
 
-## Why?
+- Works out of the box with the recommended **`grok-4-fast-non-reasoning`** model.
+- Live search toggle to let Grok fetch fresh information when needed.
+- Full support for Home Assistant LLM tools, prompts, and conversation history.
+- Advanced tuning of tokens, sampling temperature/top-p, and reasoning effort per conversation subentry.
 
-This is simple, by having custom_components look (README + structure) the same
-it is easier for developers to help each other and for users to start using them.
+## 🔑 Requirements
 
-If you are a developer and you want to add things to this "blueprint" that you think more
-developers will have use for, please open a PR to add it :)
+- Home Assistant 2025.2.4 or newer.
+- An xAI API key with access to the Grok models.
 
-## What?
+## 📦 Installation
 
-This repository contains multiple files, here is a overview:
+1. Copy the `custom_components/xai_conversation` folder into your Home Assistant `config/custom_components` directory.
+2. Restart Home Assistant to load the new integration.
+3. (Optional) If you manage dependencies manually, ensure `xai-sdk==1.2.0` is available to Home Assistant.
 
-File | Purpose | Documentation
--- | -- | --
-`.devcontainer.json` | Used for development/testing with Visual Studio Code. | [Documentation](https://code.visualstudio.com/docs/remote/containers)
-`.github/ISSUE_TEMPLATE/*.yml` | Templates for the issue tracker | [Documentation](https://help.github.com/en/github/building-a-strong-community/configuring-issue-templates-for-your-repository)
-`custom_components/integration_blueprint/*` | Integration files, this is where everything happens. | [Documentation](https://developers.home-assistant.io/docs/creating_component_index)
-`CONTRIBUTING.md` | Guidelines on how to contribute. | [Documentation](https://help.github.com/en/github/building-a-strong-community/setting-guidelines-for-repository-contributors)
-`LICENSE` | The license file for the project. | [Documentation](https://help.github.com/en/github/creating-cloning-and-archiving-repositories/licensing-a-repository)
-`README.md` | The file you are reading now, should contain info about the integration, installation and configuration instructions. | [Documentation](https://help.github.com/en/github/writing-on-github/basic-writing-and-formatting-syntax)
-`requirements.txt` | Python packages used for development/lint/testing this integration. | [Documentation](https://pip.pypa.io/en/stable/user_guide/#requirements-files)
+## ⚙️ Configuration
 
-## How?
+1. In Home Assistant, navigate to **Settings → Devices & Services → Add Integration**.
+2. Search for **xAI Conversation** and enter your xAI API key.
+3. A recommended conversation agent is created automatically with safe defaults.
+4. You can add additional conversation entries or reconfigure existing ones from the entry's **Configure** menu.
 
-1. Create a new repository in GitHub, using this repository as a template by clicking the "Use this template" button in the GitHub UI.
-1. Open your new repository in Visual Studio Code devcontainer (Preferably with the "`Dev Containers: Clone Repository in Named Container Volume...`" option).
-1. Rename all instances of the `integration_blueprint` to `custom_components/<your_integration_domain>` (e.g. `custom_components/awesome_integration`).
-1. Rename all instances of the `Integration Blueprint` to `<Your Integration Name>` (e.g. `Awesome Integration`).
-1. Run the `scripts/develop` to start HA and test out your new integration.
+### Advanced options
 
-## Next steps
+When you uncheck **Use recommended settings**, the following fields become editable:
 
-These are some next steps you may want to look into:
-- Add tests to your integration, [`pytest-homeassistant-custom-component`](https://github.com/MatthewFlamm/pytest-homeassistant-custom-component) can help you get started.
-- Add brand images (logo/icon) to https://github.com/home-assistant/brands.
-- Create your first release.
-- Share your integration on the [Home Assistant Forum](https://community.home-assistant.io/).
-- Submit your integration to [HACS](https://hacs.xyz/docs/publish/start).
+| Option | Description | Default |
+| --- | --- | --- |
+| **Chat model** | Grok model to use for the conversation. | `grok-4-fast-non-reasoning` |
+| **Max tokens** | Upper bound for generated response length. | `4096` |
+| **Temperature** | Sampling temperature for creativity. | `0.7` |
+| **Top-p** | Nucleus sampling threshold. | `1.0` |
+| **Reasoning effort** | Controls Grok's reasoning depth. | `medium` |
+| **Live search** | If enabled, Grok augments responses with real-time information. | Enabled |
+| **Prompt** | Custom system prompt to scope the agent. | Home Assistant default |
+| **Home Assistant LLM APIs** | Allow the agent to call built-in Home Assistant tools. | Assist API |
+
+Live search is always visible in the advanced view so you can toggle it per subentry even if other fields stay at their defaults.
+
+## 🛠️ Development & Testing
+
+- Run `./scripts/develop` to spin up a Home Assistant instance with this integration for manual testing.
+- Run `./scripts/lint` before committing to ensure Home Assistant style checks pass.
+- Project dependencies are listed in `requirements.txt`.
+
+## ❓ Troubleshooting
+
+- **`cannot_connect` error during setup** – confirm your API key is valid and has Grok access.
+- **Slow or missing answers** – disable live search to isolate network latency, or lower max tokens for shorter replies.
+- Check Home Assistant logs (`config/home-assistant.log`) for detailed integration traces.
+
+Enjoy chatting with Grok from your smart home! 🏠🤖
+
