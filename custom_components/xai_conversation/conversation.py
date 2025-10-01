@@ -46,7 +46,7 @@ class XAIConversationEntity(
     """xAI conversation agent entity."""
 
     _attr_supported_languages = MATCH_ALL
-    _attr_supports_streaming = False
+    _attr_supports_streaming = True
 
     def __init__(self, entry: ConfigEntry, subentry: ConfigSubentry) -> None:
         """Initialize the conversation entity."""
