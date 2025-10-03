@@ -1,19 +1,41 @@
 {
   "config": {
+    "step": {
+      "user": {
+        "data": {
+          "api_key": "API Key"
+        },
+        "data_description": {
+          "api_key": "Your xAI API key from console.x.ai"
+        }
+      }
+    },
     "error": {
       "cannot_connect": "Unable to connect to xAI. Check your API key and try again.",
       "unknown": "Unexpected error validating the xAI API key."
+    },
+    "abort": {
+      "already_configured": "This service is already configured."
     }
   },
   "config_subentries": {
     "conversation": {
+      "initiate_flow": {
+        "user": "Add conversation agent",
+        "reconfigure": "Reconfigure conversation agent"
+      },
+      "entry_type": "Conversation agent",
       "step": {
         "init": {
           "data": {
+            "name": "Name",
+            "prompt": "Prompt",
+            "llm_hass_api": "Control Home Assistant",
             "recommended": "Use recommended settings"
           },
           "data_description": {
-            "prompt": "Provide base instructions for the Grok model. Templates are supported."
+            "prompt": "Provide base instructions for the Grok model. Templates are supported.",
+            "llm_hass_api": "Allow the model to interact with Home Assistant to control devices, query information, and help automate your home."
           }
         },
         "advanced": {
@@ -32,7 +54,17 @@
         }
       },
       "abort": {
-        "entry_not_loaded": "Configure the integration while it is enabled."
+        "entry_not_loaded": "Configure the integration while it is enabled.",
+        "reconfigure_successful": "Successfully reconfigured the conversation agent."
+      }
+    }
+  },
+  "selector": {
+    "reasoning_effort": {
+      "options": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High"
       }
     }
   }

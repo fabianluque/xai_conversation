@@ -26,7 +26,7 @@ RECOMMENDED_MAX_TOKENS: Final = 4096
 RECOMMENDED_TEMPERATURE: Final = 0.7
 RECOMMENDED_TOP_P: Final = 1.0
 RECOMMENDED_REASONING_EFFORT: Final = "medium"
-RECOMMENDED_LIVE_SEARCH: Final = True
+RECOMMENDED_LIVE_SEARCH: Final = False
 PROGRESS_MESSAGE: Final = "Let me take care of that for you..."
 
 LOGGER = logging.getLogger(__package__)
