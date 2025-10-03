@@ -8,6 +8,7 @@ import grpc
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_API_KEY, Platform
 from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.helpers import config_validation as cv
 from xai_sdk.aio.client import Client as XAIAsyncClient
 
 from .const import LOGGER
@@ -17,6 +18,8 @@ if TYPE_CHECKING:
     from homeassistant.helpers.typing import ConfigType
 
 PLATFORMS: Final = (Platform.CONVERSATION, Platform.AI_TASK)
+
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN := "xai_conversation")
 
 
 type XAIConfigEntry = ConfigEntry[XAIAsyncClient]
