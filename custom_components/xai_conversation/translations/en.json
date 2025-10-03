@@ -46,10 +46,12 @@
             "temperature": "Temperature",
             "top_p": "Top P",
             "reasoning_effort": "Reasoning effort",
-            "live_search": "Enable live search"
+            "live_search": "Enable live search",
+            "max_search_results": "Maximum search results"
           },
           "data_description": {
-            "live_search": "Allow the xAI model to search the web before answering."
+            "live_search": "Allow the xAI model to search the web before answering.",
+            "max_search_results": "Maximum number of search results to consider when generating responses."
           }
         }
       },

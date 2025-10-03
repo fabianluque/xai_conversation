@@ -40,6 +40,7 @@ from xai_sdk.proto import chat_pb2
 from .const import (
     CONF_CHAT_MODEL,
     CONF_LIVE_SEARCH,
+    CONF_MAX_SEARCH_RESULTS,
     CONF_MAX_TOKENS,
     CONF_REASONING_EFFORT,
     CONF_TEMPERATURE,
@@ -49,9 +50,11 @@ from .const import (
     PROGRESS_MESSAGE,
     RECOMMENDED_CHAT_MODEL,
     RECOMMENDED_LIVE_SEARCH,
+    RECOMMENDED_MAX_SEARCH_RESULTS,
     RECOMMENDED_MAX_TOKENS,
     RECOMMENDED_TEMPERATURE,
     RECOMMENDED_TOP_P,
+    XAI_MODELS,
 )
 
 MAX_TOOL_ITERATIONS = 6
@@ -274,7 +277,10 @@ class XAIBaseEntity(Entity):
     ) -> SearchParameters | None:
         """Derive live search settings for the request."""
         if options.get(CONF_LIVE_SEARCH, RECOMMENDED_LIVE_SEARCH):
-            return SearchParameters(mode="on")
+            max_results = options.get(
+                CONF_MAX_SEARCH_RESULTS, RECOMMENDED_MAX_SEARCH_RESULTS
+            )
+            return SearchParameters(mode="on", max_search_results=max_results)
         if options.get(CONF_LIVE_SEARCH) is not None:
             return SearchParameters(mode="off")
         return None
@@ -287,7 +293,13 @@ class XAIBaseEntity(Entity):
         if not reasoning_effort:
             return None
 
-        if "non-reasoning" in model:
+        # Check if the selected model supports reasoning
+        model_supports_reasoning = any(
+            model_def["id"] == model and model_def["supports_reasoning"]
+            for model_def in XAI_MODELS
+        )
+
+        if not model_supports_reasoning:
             LOGGER.debug(
                 "Skipping reasoning effort %s for non-reasoning model %s",
                 reasoning_effort,

@@ -23,6 +23,7 @@ from homeassistant.helpers.selector import (
     SelectOptionDict,
     SelectSelector,
     SelectSelectorConfig,
+    SelectSelectorMode,
     TemplateSelector,
 )
 from xai_sdk.aio.client import Client as XAIAsyncClient
@@ -30,6 +31,7 @@ from xai_sdk.aio.client import Client as XAIAsyncClient
 from .const import (
     CONF_CHAT_MODEL,
     CONF_LIVE_SEARCH,
+    CONF_MAX_SEARCH_RESULTS,
     CONF_MAX_TOKENS,
     CONF_PROMPT,
     CONF_REASONING_EFFORT,
@@ -39,18 +41,19 @@ from .const import (
     DEFAULT_CONVERSATION_NAME,
     DOMAIN,
     LOGGER,
+    REASONING_OPTIONS,
     RECOMMENDED_CHAT_MODEL,
     RECOMMENDED_CONVERSATION_OPTIONS,
     RECOMMENDED_LIVE_SEARCH,
+    RECOMMENDED_MAX_SEARCH_RESULTS,
     RECOMMENDED_MAX_TOKENS,
     RECOMMENDED_REASONING_EFFORT,
     RECOMMENDED_TEMPERATURE,
     RECOMMENDED_TOP_P,
+    XAI_MODELS,
 )
 
 STEP_USER_DATA_SCHEMA = vol.Schema({vol.Required(CONF_API_KEY): str})
-
-REASONING_OPTIONS = ["low", "medium", "high"]
 
 
 async def validate_input(data: dict[str, Any]) -> None:
@@ -229,11 +232,22 @@ class XAISubentryFlowHandler(ConfigSubentryFlow):
         """Show advanced configuration when recommended settings are disabled."""
         options = self.options
 
+        # Create model options for dropdown
+        model_options: list[SelectOptionDict] = [
+            SelectOptionDict(value=model["id"], label=model["name"])
+            for model in XAI_MODELS
+        ]
+
         step_schema: dict[Any, Any] = {
             vol.Required(
                 CONF_CHAT_MODEL,
                 default=options.get(CONF_CHAT_MODEL, RECOMMENDED_CHAT_MODEL),
-            ): str,
+            ): SelectSelector(
+                SelectSelectorConfig(
+                    options=model_options,
+                    mode=SelectSelectorMode.DROPDOWN,
+                )
+            ),
             vol.Optional(
                 CONF_MAX_TOKENS,
                 default=options.get(CONF_MAX_TOKENS, RECOMMENDED_MAX_TOKENS),
@@ -246,6 +260,7 @@ class XAISubentryFlowHandler(ConfigSubentryFlow):
                 CONF_TOP_P,
                 default=options.get(CONF_TOP_P, RECOMMENDED_TOP_P),
             ): NumberSelector(NumberSelectorConfig(min=0, max=1, step=0.05)),
+            # Always show reasoning effort field - only used for supporting models
             vol.Optional(
                 CONF_REASONING_EFFORT,
                 default=options.get(
@@ -261,6 +276,12 @@ class XAISubentryFlowHandler(ConfigSubentryFlow):
                 CONF_LIVE_SEARCH,
                 default=options.get(CONF_LIVE_SEARCH, RECOMMENDED_LIVE_SEARCH),
             ): bool,
+            vol.Optional(
+                CONF_MAX_SEARCH_RESULTS,
+                default=options.get(
+                    CONF_MAX_SEARCH_RESULTS, RECOMMENDED_MAX_SEARCH_RESULTS
+                ),
+            ): NumberSelector(NumberSelectorConfig(min=1, max=50, step=1)),
         }
 
         if user_input is not None:

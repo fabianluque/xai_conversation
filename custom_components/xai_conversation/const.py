@@ -7,6 +7,7 @@ from typing import Final
 
 from homeassistant.const import CONF_LLM_HASS_API
 from homeassistant.helpers import llm
+from homeassistant.helpers.selector import SelectOptionDict
 
 DOMAIN: Final = "xai_conversation"
 DEFAULT_NAME: Final = "xAI Conversation"
@@ -20,6 +21,7 @@ CONF_PROMPT: Final = "prompt"
 CONF_RECOMMENDED: Final = "recommended"
 CONF_REASONING_EFFORT: Final = "reasoning_effort"
 CONF_LIVE_SEARCH: Final = "live_search"
+CONF_MAX_SEARCH_RESULTS: Final = "max_search_results"
 
 RECOMMENDED_CHAT_MODEL: Final = "grok-4-fast-non-reasoning"
 RECOMMENDED_MAX_TOKENS: Final = 4096
@@ -27,6 +29,43 @@ RECOMMENDED_TEMPERATURE: Final = 0.7
 RECOMMENDED_TOP_P: Final = 1.0
 RECOMMENDED_REASONING_EFFORT: Final = "medium"
 RECOMMENDED_LIVE_SEARCH: Final = False
+RECOMMENDED_MAX_SEARCH_RESULTS: Final = 5
+
+# xAI model definitions with reasoning support
+XAI_MODELS: Final = [
+    {
+        "id": "grok-4-fast-reasoning",
+        "name": "Grok 4 Fast (Reasoning)",
+        "supports_reasoning": True,
+    },
+    {
+        "id": "grok-4-fast-non-reasoning",
+        "name": "Grok 4 Fast (Non-reasoning)",
+        "supports_reasoning": False,
+    },
+    {
+        "id": "grok-4",
+        "name": "Grok 4",
+        "supports_reasoning": True,
+    },
+    {
+        "id": "grok-3-mini",
+        "name": "Grok 3 Mini",
+        "supports_reasoning": True,
+    },
+    {
+        "id": "grok-3",
+        "name": "Grok 3",
+        "supports_reasoning": True,
+    },
+]
+
+# Reasoning effort options
+REASONING_OPTIONS: Final = [
+    SelectOptionDict(value="low", label="Low"),
+    SelectOptionDict(value="medium", label="Medium"),
+    SelectOptionDict(value="high", label="High"),
+]
 PROGRESS_MESSAGE: Final = "Let me take care of that for you..."
 
 LOGGER = logging.getLogger(__package__)
