@@ -59,6 +59,11 @@ XAI_MODELS: Final = [
         "name": "Grok 3",
         "supports_reasoning": True,
     },
+    {
+        "id": "grok-2-image",
+        "name": "Grok 2 Image",
+        "supports_reasoning": False,
+    },
 ]
 
 # Reasoning effort options

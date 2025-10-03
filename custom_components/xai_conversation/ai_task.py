@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 from homeassistant.components import ai_task, conversation
 from homeassistant.exceptions import HomeAssistantError
 
-from .const import LOGGER
+from .const import CONF_CHAT_MODEL, LOGGER, RECOMMENDED_CHAT_MODEL
 from .entity import XAIBaseEntity
 
 if TYPE_CHECKING:
@@ -114,12 +114,15 @@ class XAITaskEntity(
             msg = "No prompt provided for image generation"
             raise HomeAssistantError(msg)
 
+        options = self.subentry.data
+        model = options.get(CONF_CHAT_MODEL, RECOMMENDED_CHAT_MODEL)
+
         client = self.entry.runtime_data
 
         try:
             response = await client.image.sample(
                 prompt=prompt,
-                model="grok-2-image",
+                model=model,
                 image_format="base64",
             )
         except Exception as err:
