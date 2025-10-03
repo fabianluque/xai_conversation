@@ -59,6 +59,41 @@
         "entry_not_loaded": "Configure the integration while it is enabled.",
         "reconfigure_successful": "Successfully reconfigured the conversation agent."
       }
+    },
+    "ai_task": {
+      "initiate_flow": {
+        "user": "Add AI task",
+        "reconfigure": "Reconfigure AI task"
+      },
+      "entry_type": "AI task",
+      "step": {
+        "init": {
+          "data": {
+            "name": "Name",
+            "recommended": "Use recommended settings"
+          }
+        },
+        "advanced": {
+          "title": "Advanced settings",
+          "data": {
+            "chat_model": "Model",
+            "max_tokens": "Maximum tokens",
+            "temperature": "Temperature",
+            "top_p": "Top P",
+            "reasoning_effort": "Reasoning effort",
+            "live_search": "Enable live search",
+            "max_search_results": "Maximum search results"
+          },
+          "data_description": {
+            "live_search": "Allow the xAI model to search the web before answering.",
+            "max_search_results": "Maximum number of search results to consider when generating responses."
+          }
+        }
+      },
+      "abort": {
+        "entry_not_loaded": "Configure the integration while it is enabled.",
+        "reconfigure_successful": "Successfully reconfigured the AI task agent."
+      }
     }
   },
   "selector": {

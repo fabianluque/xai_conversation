@@ -55,6 +55,41 @@
         "entry_not_loaded": "Cannot configure while the entry is disabled.",
         "reconfigure_successful": "[%key:common::config_flow::abort::reconfigure_successful%]"
       }
+    },
+    "ai_task": {
+      "initiate_flow": {
+        "user": "Add xAI AI Task",
+        "reconfigure": "Reconfigure xAI AI task"
+      },
+      "entry_type": "AI task",
+      "step": {
+        "init": {
+          "data": {
+            "name": "[%key:common::config_flow::data::name%]",
+            "recommended": "Use recommended settings"
+          }
+        },
+        "advanced": {
+          "title": "Advanced settings",
+          "data": {
+            "chat_model": "[%key:common::generic::model%]",
+            "max_tokens": "Maximum tokens to use in responses",
+            "temperature": "Temperature",
+            "top_p": "Top P",
+            "reasoning_effort": "Reasoning effort",
+            "live_search": "Enable live search",
+            "max_search_results": "Maximum search results"
+          },
+          "data_description": {
+            "live_search": "Allow the model to search the web for the latest information.",
+            "max_search_results": "Maximum number of search results to consider when generating responses."
+          }
+        }
+      },
+      "abort": {
+        "entry_not_loaded": "Cannot configure while the entry is disabled.",
+        "reconfigure_successful": "Successfully reconfigured the AI task."
+      }
     }
   },
   "selector": {

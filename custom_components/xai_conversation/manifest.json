@@ -10,6 +10,7 @@
   "dependencies": ["conversation"],
   "integration_type": "service",
   "iot_class": "cloud_polling",
+  "platforms": ["conversation"],
   "requirements": [
     "xai-sdk==1.2.0"
   ]

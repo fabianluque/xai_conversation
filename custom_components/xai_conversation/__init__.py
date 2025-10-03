@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
     from homeassistant.helpers.typing import ConfigType
 
-PLATFORMS: Final = (Platform.CONVERSATION,)
+PLATFORMS: Final = (Platform.CONVERSATION, Platform.AI_TASK)
 
 
 type XAIConfigEntry = ConfigEntry[XAIAsyncClient]

@@ -38,10 +38,12 @@ from .const import (
     CONF_RECOMMENDED,
     CONF_TEMPERATURE,
     CONF_TOP_P,
+    DEFAULT_AI_TASK_NAME,
     DEFAULT_CONVERSATION_NAME,
     DOMAIN,
     LOGGER,
     REASONING_OPTIONS,
+    RECOMMENDED_AI_TASK_OPTIONS,
     RECOMMENDED_CHAT_MODEL,
     RECOMMENDED_CONVERSATION_OPTIONS,
     RECOMMENDED_LIVE_SEARCH,
@@ -101,7 +103,13 @@ class XAIConfigFlow(ConfigFlow, domain=DOMAIN):
                         "data": RECOMMENDED_CONVERSATION_OPTIONS,
                         "title": DEFAULT_CONVERSATION_NAME,
                         "unique_id": None,
-                    }
+                    },
+                    {
+                        "subentry_type": "ai_task",
+                        "data": RECOMMENDED_AI_TASK_OPTIONS,
+                        "title": DEFAULT_AI_TASK_NAME,
+                        "unique_id": None,
+                    },
                 ],
             )
 
@@ -117,13 +125,21 @@ class XAIConfigFlow(ConfigFlow, domain=DOMAIN):
         cls, _config_entry: ConfigEntry
     ) -> dict[str, type[ConfigSubentryFlow]]:
         """Return subentries supported by this integration."""
-        return {"conversation": XAISubentryFlowHandler}
+        return {
+            "conversation": XAIConversationFlowHandler,
+            "ai_task": XAIaiTaskDataFlowHandler,
+        }
 
 
-class XAISubentryFlowHandler(ConfigSubentryFlow):
+class XAIConversationFlowHandler(ConfigSubentryFlow):
     """Flow for managing xAI conversation subentries."""
 
     options: dict[str, Any]
+
+    @property
+    def _subentry_type(self) -> str:
+        """Return the subentry type."""
+        return "conversation"
 
     @property
     def _is_new(self) -> bool:
@@ -133,7 +149,7 @@ class XAISubentryFlowHandler(ConfigSubentryFlow):
     async def async_step_user(
         self, _user_input: dict[str, Any] | None = None
     ) -> SubentryFlowResult:
-        """Initialize options for a new conversation subentry."""
+        """Initialize options for a new subentry."""
         self.options = RECOMMENDED_CONVERSATION_OPTIONS.copy()
         return await self.async_step_init()
 
@@ -166,9 +182,8 @@ class XAISubentryFlowHandler(ConfigSubentryFlow):
         step_schema: dict[Any, Any] = {}
 
         if self._is_new:
-            step_schema[vol.Required(CONF_NAME, default=DEFAULT_CONVERSATION_NAME)] = (
-                str
-            )
+            default_name = DEFAULT_CONVERSATION_NAME
+            step_schema[vol.Required(CONF_NAME, default=default_name)] = str
 
         step_schema.update(
             {
@@ -288,6 +303,154 @@ class XAISubentryFlowHandler(ConfigSubentryFlow):
             options.update(user_input)
             if self._is_new:
                 title = options.pop(CONF_NAME, DEFAULT_CONVERSATION_NAME)
+                return self.async_create_entry(title=title, data=options)
+            return self.async_update_and_abort(
+                self._get_entry(),
+                self._get_reconfigure_subentry(),
+                data=options,
+            )
+
+        return self.async_show_form(
+            step_id="advanced",
+            data_schema=self.add_suggested_values_to_schema(
+                vol.Schema(step_schema),
+                options,
+            ),
+        )
+
+
+class XAIaiTaskDataFlowHandler(ConfigSubentryFlow):
+    """Flow for managing xAI AI task subentries."""
+
+    options: dict[str, Any]
+
+    @property
+    def _subentry_type(self) -> str:
+        """Return the subentry type."""
+        return "ai_task"
+
+    @property
+    def _is_new(self) -> bool:
+        """Return if this is a new subentry."""
+        return self.source == "user"
+
+    async def async_step_user(
+        self, _user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        """Initialize options for a new subentry."""
+        self.options = RECOMMENDED_AI_TASK_OPTIONS.copy()
+        return await self.async_step_init()
+
+    async def async_step_reconfigure(
+        self, _user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        """Handle reconfiguration of a subentry."""
+        self.options = self._get_reconfigure_subentry().data.copy()
+        return await self.async_step_init()
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        """Show the initial configuration step."""
+        if self._get_entry().state != ConfigEntryState.LOADED:
+            return self.async_abort(reason="entry_not_loaded")
+
+        options = self.options
+
+        step_schema: dict[Any, Any] = {}
+
+        if self._is_new:
+            default_name = DEFAULT_AI_TASK_NAME
+            step_schema[vol.Required(CONF_NAME, default=default_name)] = str
+
+        step_schema[
+            vol.Required(CONF_RECOMMENDED, default=options.get(CONF_RECOMMENDED, True))
+        ] = bool
+
+        if user_input is not None:
+            if user_input[CONF_RECOMMENDED]:
+                if self._is_new:
+                    title = user_input.get(CONF_NAME, DEFAULT_AI_TASK_NAME)
+                    return self.async_create_entry(title=title, data=options)
+                return self.async_update_and_abort(
+                    self._get_entry(),
+                    self._get_reconfigure_subentry(),
+                    data=options,
+                )
+
+            options.update(user_input)
+            return await self.async_step_advanced()
+
+        return self.async_show_form(
+            step_id="init",
+            data_schema=self.add_suggested_values_to_schema(
+                vol.Schema(step_schema),
+                options,
+            ),
+        )
+
+    async def async_step_advanced(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        """Show advanced configuration when recommended settings are disabled."""
+        options = self.options
+
+        # Create model options for dropdown
+        model_options: list[SelectOptionDict] = [
+            SelectOptionDict(value=model["id"], label=model["name"])
+            for model in XAI_MODELS
+        ]
+
+        step_schema: dict[Any, Any] = {
+            vol.Required(
+                CONF_CHAT_MODEL,
+                default=options.get(CONF_CHAT_MODEL, RECOMMENDED_CHAT_MODEL),
+            ): SelectSelector(
+                SelectSelectorConfig(
+                    options=model_options,
+                    mode=SelectSelectorMode.DROPDOWN,
+                )
+            ),
+            vol.Optional(
+                CONF_MAX_TOKENS,
+                default=options.get(CONF_MAX_TOKENS, RECOMMENDED_MAX_TOKENS),
+            ): vol.All(int, vol.Range(min=1)),
+            vol.Optional(
+                CONF_TEMPERATURE,
+                default=options.get(CONF_TEMPERATURE, RECOMMENDED_TEMPERATURE),
+            ): NumberSelector(NumberSelectorConfig(min=0, max=2, step=0.05)),
+            vol.Optional(
+                CONF_TOP_P,
+                default=options.get(CONF_TOP_P, RECOMMENDED_TOP_P),
+            ): NumberSelector(NumberSelectorConfig(min=0, max=1, step=0.05)),
+            # Always show reasoning effort field - only used for supporting models
+            vol.Optional(
+                CONF_REASONING_EFFORT,
+                default=options.get(
+                    CONF_REASONING_EFFORT, RECOMMENDED_REASONING_EFFORT
+                ),
+            ): SelectSelector(
+                SelectSelectorConfig(
+                    options=REASONING_OPTIONS,
+                    translation_key=CONF_REASONING_EFFORT,
+                )
+            ),
+            vol.Optional(
+                CONF_LIVE_SEARCH,
+                default=options.get(CONF_LIVE_SEARCH, RECOMMENDED_LIVE_SEARCH),
+            ): bool,
+            vol.Optional(
+                CONF_MAX_SEARCH_RESULTS,
+                default=options.get(
+                    CONF_MAX_SEARCH_RESULTS, RECOMMENDED_MAX_SEARCH_RESULTS
+                ),
+            ): NumberSelector(NumberSelectorConfig(min=1, max=50, step=1)),
+        }
+
+        if user_input is not None:
+            options.update(user_input)
+            if self._is_new:
+                title = options.pop(CONF_NAME, DEFAULT_AI_TASK_NAME)
                 return self.async_create_entry(title=title, data=options)
             return self.async_update_and_abort(
                 self._get_entry(),
