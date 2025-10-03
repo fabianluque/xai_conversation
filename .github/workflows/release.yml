@@ -20,6 +20,12 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Update manifest.json version
+        run: |
+          VERSION="${{ github.event.inputs.tag }}"
+          VERSION_NO_V="${VERSION#v}"
+          jq ".version = \"$VERSION_NO_V\"" custom_components/xai_conversation/manifest.json > manifest.tmp && mv manifest.tmp custom_components/xai_conversation/manifest.json
+        shell: bash
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
