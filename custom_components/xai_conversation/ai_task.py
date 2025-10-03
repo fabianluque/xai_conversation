@@ -8,6 +8,9 @@ from typing import TYPE_CHECKING
 
 from homeassistant.components import ai_task, conversation
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers import llm
+from voluptuous_openapi import convert
+from xai_sdk.proto import chat_pb2
 
 from .const import CONF_CHAT_MODEL, LOGGER, RECOMMENDED_CHAT_MODEL
 from .entity import XAIBaseEntity
@@ -65,7 +68,28 @@ class XAITaskEntity(
         chat_log: conversation.ChatLog,
     ) -> ai_task.GenDataTaskResult:
         """Handle a generate data task."""
-        await self._async_handle_chat_log(chat_log)
+        response_format = None
+
+        # If a structure is provided, convert it to JSON schema for xAI
+        if task.structure:
+            json_schema = convert(
+                task.structure,
+                custom_serializer=(
+                    chat_log.llm_api.custom_serializer
+                    if chat_log.llm_api
+                    else llm.selector_serializer
+                ),
+            )
+
+            response_format = chat_pb2.ResponseFormat()
+            response_format.format_type = chat_pb2.FORMAT_TYPE_JSON_SCHEMA
+            response_format.schema = json.dumps(json_schema)
+            LOGGER.debug(
+                "Using structured output with schema: %s",
+                response_format.schema,
+            )
+
+        await self._async_handle_chat_log(chat_log, response_format=response_format)
 
         if not isinstance(chat_log.content[-1], conversation.AssistantContent):
             msg = "Last content in chat log is not an AssistantContent"
@@ -73,11 +97,14 @@ class XAITaskEntity(
 
         text = chat_log.content[-1].content or ""
 
+        # If no structure was requested, return raw text
         if not task.structure:
             return ai_task.GenDataTaskResult(
                 conversation_id=chat_log.conversation_id,
                 data=text,
             )
+
+        # Parse the JSON response (should be valid since we used structured output)
         try:
             data = json.loads(text)
         except json.JSONDecodeError as err:

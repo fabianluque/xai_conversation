@@ -84,7 +84,11 @@ class XAIBaseEntity(Entity):
             entry_type=dr.DeviceEntryType.SERVICE,
         )
 
-    async def _async_handle_chat_log(self, chat_log: conversation.ChatLog) -> None:
+    async def _async_handle_chat_log(
+        self,
+        chat_log: conversation.ChatLog,
+        response_format: chat_pb2.ResponseFormat | None = None,
+    ) -> None:
         """Generate a response for the provided chat log."""
         options = self.subentry.data
         client = self.entry.runtime_data
@@ -112,6 +116,7 @@ class XAIBaseEntity(Entity):
                 search_parameters=search_parameters,
                 tools=tools,
                 parallel_tool_calls=True,
+                response_format=response_format,
                 store_messages=False,
             )
 
