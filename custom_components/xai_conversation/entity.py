@@ -282,8 +282,8 @@ class XAIBaseEntity(Entity):
     ) -> SearchParameters | None:
         """Derive live search settings for the request."""
         if options.get(CONF_LIVE_SEARCH, RECOMMENDED_LIVE_SEARCH):
-            max_results = options.get(
-                CONF_MAX_SEARCH_RESULTS, RECOMMENDED_MAX_SEARCH_RESULTS
+            max_results = int(
+                options.get(CONF_MAX_SEARCH_RESULTS, RECOMMENDED_MAX_SEARCH_RESULTS)
             )
             return SearchParameters(mode="on", max_search_results=max_results)
         if options.get(CONF_LIVE_SEARCH) is not None:
