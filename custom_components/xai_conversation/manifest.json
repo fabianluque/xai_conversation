@@ -5,6 +5,7 @@
   "codeowners": ["@fabianluque"],
   "config_flow": true,
   "documentation": "https://github.com/fabianluque/xai-conversation",
+  "homeassistant": "2024.2.0",
   "issue_tracker": "https://github.com/fabianluque/xai-conversation/issues",
   "dependencies": ["conversation"],
   "integration_type": "service",
