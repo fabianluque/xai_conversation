@@ -1,8 +1,8 @@
 # xAI Conversation for Home Assistant
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
-[![GitHub Release](https://img.shields.io/github/release/fabianluque/xai-conversation.svg)](https://github.com/fabianluque/xai-conversation/releases)
-[![License](https://img.shields.io/github/license/fabianluque/xai-conversation.svg)](LICENSE)
+[![GitHub Release](https://img.shields.io/github/release/fabianluque/xai_conversation.svg)](https://github.com/fabianluque/xai_conversation/releases)
+[![License](https://img.shields.io/github/license/fabianluque/xai_conversation.svg)](LICENSE)
 
 Interact with xAI's Grok models directly from Home Assistant's Conversation platform. The integration uses the official [`xai-sdk`](https://pypi.org/project/xai-sdk/) to provide fast responses, optional reasoning, and live search enrichment while keeping configuration in the Home Assistant UI.
 
@@ -38,13 +38,13 @@ Interact with xAI's Grok models directly from Home Assistant's Conversation plat
 
 ### HACS (Recommended)
 
-[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=fabianluque&repository=xai-conversation&category=integration)
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=fabianluque&repository=xai_conversation&category=integration)
 
 1. Ensure [HACS](https://hacs.xyz/) is installed in your Home Assistant instance.
 2. Click the button above **OR** manually add the repository:
    - In Home Assistant, go to **HACS → Integrations**.
    - Click the three dots menu in the top right and select **Custom repositories**.
-   - Add this repository URL: `https://github.com/fabianluque/xai-conversation`
+  - Add this repository URL: `https://github.com/fabianluque/xai_conversation`
    - Set the category to **Integration** and click **Add**.
 3. Find **xAI Conversation** in the HACS integrations list and click **Download**.
 4. Restart Home Assistant.

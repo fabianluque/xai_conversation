@@ -4,10 +4,10 @@
   "codeowners": ["@fabianluque"],
   "config_flow": true,
   "dependencies": ["conversation"],
-  "documentation": "https://github.com/fabianluque/xai-conversation",
+  "documentation": "https://github.com/fabianluque/xai_conversation",
   "integration_type": "service",
   "iot_class": "cloud_polling",
-  "issue_tracker": "https://github.com/fabianluque/xai-conversation/issues",
+  "issue_tracker": "https://github.com/fabianluque/xai_conversation/issues",
   "requirements": [
     "xai-sdk==1.2.0"
   ],
