@@ -47,7 +47,6 @@ from .const import (
     CONF_TOP_P,
     DOMAIN,
     LOGGER,
-    PROGRESS_MESSAGE,
     RECOMMENDED_CHAT_MODEL,
     RECOMMENDED_LIVE_SEARCH,
     RECOMMENDED_MAX_SEARCH_RESULTS,
@@ -96,8 +95,6 @@ class XAIBaseEntity(Entity):
         tools = self._build_tools(chat_log)
         search_parameters = self._build_search_parameters(options)
 
-        progress_message_sent = False
-
         for iteration in range(MAX_TOOL_ITERATIONS):
             messages = await self._async_build_messages(list(chat_log.content))
 
@@ -120,17 +117,11 @@ class XAIBaseEntity(Entity):
                 store_messages=False,
             )
 
-            (
-                final_response,
-                streamed_output,
-                streamed_tool_call,
-            ) = await self._async_stream_chat_response(chat_log, chat_request)
+            (final_response) = await self._async_stream_chat_response(
+                chat_log, chat_request
+            )
 
             self._log_usage(chat_log, final_response)
-
-            if streamed_tool_call and not streamed_output and not progress_message_sent:
-                self._notify_chat_log_progress(chat_log)
-                progress_message_sent = True
 
             if not chat_log.unresponded_tool_results:
                 break
@@ -313,19 +304,6 @@ class XAIBaseEntity(Entity):
             return None
 
         return reasoning_effort
-
-    def _notify_chat_log_progress(self, chat_log: Any) -> None:
-        """Send a friendly progress update to the listener."""
-        if not (listener := chat_log.delta_listener):
-            return
-
-        listener(
-            chat_log,
-            {
-                "role": "assistant",
-                "content": PROGRESS_MESSAGE,
-            },
-        )
 
     def _notify_chat_log_assistant_delta(
         self,

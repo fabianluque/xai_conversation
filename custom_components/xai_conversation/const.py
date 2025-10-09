@@ -72,7 +72,6 @@ REASONING_OPTIONS: Final = [
     SelectOptionDict(value="medium", label="Medium"),
     SelectOptionDict(value="high", label="High"),
 ]
-PROGRESS_MESSAGE: Final = "Let me take care of that for you..."
 
 LOGGER = logging.getLogger(__package__)
 
