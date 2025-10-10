@@ -276,7 +276,7 @@ class XAIBaseEntity(Entity):
             max_results = int(
                 options.get(CONF_MAX_SEARCH_RESULTS, RECOMMENDED_MAX_SEARCH_RESULTS)
             )
-            return SearchParameters(mode="on", max_search_results=max_results)
+            return SearchParameters(mode="auto", max_search_results=max_results)
         if options.get(CONF_LIVE_SEARCH) is not None:
             return SearchParameters(mode="off")
         return None
