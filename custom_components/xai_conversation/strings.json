@@ -42,11 +42,11 @@
             "temperature": "Temperature",
             "top_p": "Top P",
             "reasoning_effort": "Reasoning effort",
-            "live_search": "Enable live search",
+            "live_search": "Search the web and X",
             "max_search_results": "Maximum search results"
           },
           "data_description": {
-            "live_search": "Allow the model to search the web for the latest information.",
+            "live_search": "Enable web and X (Twitter) search for the latest information.",
             "max_search_results": "Maximum number of search results to consider when generating responses."
           }
         }
@@ -77,11 +77,11 @@
             "temperature": "Temperature",
             "top_p": "Top P",
             "reasoning_effort": "Reasoning effort",
-            "live_search": "Enable live search",
+            "live_search": "Search the web and X",
             "max_search_results": "Maximum search results"
           },
           "data_description": {
-            "live_search": "Allow the model to search the web for the latest information.",
+            "live_search": "Enable web and X (Twitter) search for the latest information.",
             "max_search_results": "Maximum number of search results to consider when generating responses."
           }
         }

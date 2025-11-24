@@ -31,7 +31,6 @@ from xai_sdk.aio.client import Client as XAIAsyncClient
 from .const import (
     CONF_CHAT_MODEL,
     CONF_LIVE_SEARCH,
-    CONF_MAX_SEARCH_RESULTS,
     CONF_MAX_TOKENS,
     CONF_PROMPT,
     CONF_REASONING_EFFORT,
@@ -47,7 +46,6 @@ from .const import (
     RECOMMENDED_CHAT_MODEL,
     RECOMMENDED_CONVERSATION_OPTIONS,
     RECOMMENDED_LIVE_SEARCH,
-    RECOMMENDED_MAX_SEARCH_RESULTS,
     RECOMMENDED_MAX_TOKENS,
     RECOMMENDED_REASONING_EFFORT,
     RECOMMENDED_TEMPERATURE,
@@ -291,12 +289,6 @@ class XAIConversationFlowHandler(ConfigSubentryFlow):
                 CONF_LIVE_SEARCH,
                 default=options.get(CONF_LIVE_SEARCH, RECOMMENDED_LIVE_SEARCH),
             ): bool,
-            vol.Optional(
-                CONF_MAX_SEARCH_RESULTS,
-                default=options.get(
-                    CONF_MAX_SEARCH_RESULTS, RECOMMENDED_MAX_SEARCH_RESULTS
-                ),
-            ): NumberSelector(NumberSelectorConfig(min=1, max=50, step=1)),
         }
 
         if user_input is not None:
@@ -439,12 +431,6 @@ class XAIaiTaskDataFlowHandler(ConfigSubentryFlow):
                 CONF_LIVE_SEARCH,
                 default=options.get(CONF_LIVE_SEARCH, RECOMMENDED_LIVE_SEARCH),
             ): bool,
-            vol.Optional(
-                CONF_MAX_SEARCH_RESULTS,
-                default=options.get(
-                    CONF_MAX_SEARCH_RESULTS, RECOMMENDED_MAX_SEARCH_RESULTS
-                ),
-            ): NumberSelector(NumberSelectorConfig(min=1, max=50, step=1)),
         }
 
         if user_input is not None:

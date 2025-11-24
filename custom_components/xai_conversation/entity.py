@@ -15,9 +15,6 @@ from homeassistant.helpers import llm
 from homeassistant.helpers.entity import Entity
 from voluptuous_openapi import convert
 from xai_sdk.chat import (
-    SearchParameters,
-)
-from xai_sdk.chat import (
     image as chat_image,
 )
 from xai_sdk.chat import (
@@ -37,10 +34,23 @@ from xai_sdk.chat import (
 )
 from xai_sdk.proto import chat_pb2
 
+try:
+    # Optional helper available in xAI SDK >= 1.4 to classify tool calls
+    from xai_sdk.tools import (
+        code_execution,
+        get_tool_call_type,  # type: ignore[import-not-found]
+        web_search,
+        x_search,
+    )
+except ImportError:  # pragma: no cover - best-effort import
+    get_tool_call_type = None
+    web_search = None  # type: ignore[assignment]
+    x_search = None  # type: ignore[assignment]
+    code_execution = None  # type: ignore[assignment]
+
 from .const import (
     CONF_CHAT_MODEL,
     CONF_LIVE_SEARCH,
-    CONF_MAX_SEARCH_RESULTS,
     CONF_MAX_TOKENS,
     CONF_REASONING_EFFORT,
     CONF_TEMPERATURE,
@@ -49,7 +59,6 @@ from .const import (
     LOGGER,
     RECOMMENDED_CHAT_MODEL,
     RECOMMENDED_LIVE_SEARCH,
-    RECOMMENDED_MAX_SEARCH_RESULTS,
     RECOMMENDED_MAX_TOKENS,
     RECOMMENDED_TEMPERATURE,
     RECOMMENDED_TOP_P,
@@ -92,8 +101,7 @@ class XAIBaseEntity(Entity):
         options = self.subentry.data
         client = self.entry.runtime_data
 
-        tools = self._build_tools(chat_log)
-        search_parameters = self._build_search_parameters(options)
+        tools = self._build_tools(chat_log, options)
 
         for iteration in range(MAX_TOOL_ITERATIONS):
             messages = await self._async_build_messages(list(chat_log.content))
@@ -110,7 +118,6 @@ class XAIBaseEntity(Entity):
                 temperature=options.get(CONF_TEMPERATURE, RECOMMENDED_TEMPERATURE),
                 top_p=options.get(CONF_TOP_P, RECOMMENDED_TOP_P),
                 reasoning_effort=reasoning_effort,
-                search_parameters=search_parameters,
                 tools=tools,
                 parallel_tool_calls=True,
                 response_format=response_format,
@@ -219,6 +226,22 @@ class XAIBaseEntity(Entity):
         """Convert xAI tool calls into Home Assistant tool inputs."""
         results: list[llm.ToolInput] = []
         for call in calls:
+            # If SDK provides a tool call classifier, use it to skip
+            # server-side tool calls which the server executes itself.
+            if get_tool_call_type is not None:
+                try:
+                    ttype = get_tool_call_type(call)
+                except (AttributeError, TypeError, ValueError):
+                    ttype = None
+                # Only client-side tool calls should be converted and executed
+                # by Home Assistant. Skip everything else.
+                if ttype is not None and ttype != "client_side_tool":
+                    LOGGER.debug(
+                        "Skipping server-side tool call %s of type %s",
+                        getattr(call.function, "name", None),
+                        ttype,
+                    )
+                    continue
             if not call.function.name:
                 continue
             try:
@@ -247,39 +270,39 @@ class XAIBaseEntity(Entity):
         return results
 
     def _build_tools(
-        self, chat_log: conversation.ChatLog
+        self, chat_log: conversation.ChatLog, options: dict[str, Any]
     ) -> list[chat_pb2.Tool] | None:
         """Create tool definitions for the xAI request."""
-        if not chat_log.llm_api:
-            return None
+        tools: list[chat_pb2.Tool] = []
 
-        serializer = (
-            chat_log.llm_api.custom_serializer
-            if chat_log.llm_api.custom_serializer
-            else llm.selector_serializer
-        )
-
-        return [
-            chat_tool(
-                name=tool.name,
-                description=tool.description,
-                parameters=convert(tool.parameters, custom_serializer=serializer),
+        # Add Home Assistant client-side tools
+        if chat_log.llm_api:
+            serializer = (
+                chat_log.llm_api.custom_serializer
+                if chat_log.llm_api.custom_serializer
+                else llm.selector_serializer
             )
-            for tool in chat_log.llm_api.tools
-        ]
+            tools.extend(
+                [
+                    chat_tool(
+                        name=tool.name,
+                        description=tool.description,
+                        parameters=convert(
+                            tool.parameters, custom_serializer=serializer
+                        ),
+                    )
+                    for tool in chat_log.llm_api.tools
+                ]
+            )
 
-    def _build_search_parameters(
-        self, options: dict[str, Any]
-    ) -> SearchParameters | None:
-        """Derive live search settings for the request."""
+        # Add xAI agentic tools when search is enabled
         if options.get(CONF_LIVE_SEARCH, RECOMMENDED_LIVE_SEARCH):
-            max_results = int(
-                options.get(CONF_MAX_SEARCH_RESULTS, RECOMMENDED_MAX_SEARCH_RESULTS)
-            )
-            return SearchParameters(mode="auto", max_search_results=max_results)
-        if options.get(CONF_LIVE_SEARCH) is not None:
-            return SearchParameters(mode="off")
-        return None
+            if web_search is not None:
+                tools.append(web_search())
+            if x_search is not None:
+                tools.append(x_search())
+
+        return tools if tools else None
 
     def _resolve_reasoning_effort(
         self, model: str, options: dict[str, Any]
@@ -344,7 +367,46 @@ class XAIBaseEntity(Entity):
             },
         )
 
-    async def _async_stream_chat_response(
+    def _notify_chat_log_server_tool_call(self, chat_log: Any, tool_call: Any) -> None:
+        """Notify listeners about a server-side tool call invocation."""
+        if not (listener := chat_log.delta_listener):
+            return
+
+        # Try to provide a concise representation of the tool call
+        try:
+            tool_name = tool_call.function.name
+        except AttributeError:
+            tool_name = None
+
+        try:
+            if tool_call.function.arguments:
+                tool_args = json.loads(tool_call.function.arguments)
+            else:
+                tool_args = {}
+        except json.JSONDecodeError:
+            raw_args = getattr(tool_call.function, "arguments", None)
+            tool_args = {"raw_arguments": raw_args}
+
+        # Optionally annotate the tool type if the SDK helper is available
+        tool_type = None
+        if get_tool_call_type is not None:
+            try:
+                tool_type = get_tool_call_type(tool_call)
+            except (AttributeError, TypeError, ValueError):
+                tool_type = None
+
+        listener(
+            chat_log,
+            {
+                "role": "server_tool_call",
+                "tool_call_id": getattr(tool_call, "id", None),
+                "tool_name": tool_name,
+                "tool_args": tool_args,
+                "tool_type": tool_type,
+            },
+        )
+
+    async def _async_stream_chat_response(  # noqa: PLR0915
         self,
         chat_log: conversation.ChatLog,
         chat_request: Any,
@@ -354,7 +416,7 @@ class XAIBaseEntity(Entity):
         streamed_output = False
         streamed_tool_call = False
 
-        async def _delta_stream(
+        async def _delta_stream(  # noqa: PLR0912
             request: Any = chat_request,
         ) -> AsyncGenerator[dict[str, Any]]:
             nonlocal final_response, streamed_output, streamed_tool_call
@@ -399,6 +461,26 @@ class XAIBaseEntity(Entity):
                     ):
                         yield {"role": "assistant"}
                         assistant_started = True
+
+                # Surface server-side tool calls present in the chunk (agentic API)
+                # These are visible when using xAI agentic tool calling; only
+                # surface them as notifications — the server already executed
+                # these tools and their outputs are not directly returned.
+                if getattr(chunk, "tool_calls", None):
+                    for tool_call in chunk.tool_calls:
+                        # If the SDK helper classifies the tool call and it's a
+                        # client-side tool, skip here (it will be handled via
+                        # choice.tool_calls/client-side flow). Otherwise, surface it.
+                        ttype = None
+                        if get_tool_call_type is not None:
+                            try:
+                                ttype = get_tool_call_type(tool_call)
+                            except (AttributeError, TypeError, ValueError):
+                                ttype = None
+                        if ttype == "client_side_tool":
+                            continue
+                        # Notify listeners about the server-side tool call
+                        self._notify_chat_log_server_tool_call(chat_log, tool_call)
 
             if final_response is not None:
                 yield {"native": final_response}
