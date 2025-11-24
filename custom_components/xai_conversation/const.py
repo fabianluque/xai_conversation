@@ -35,9 +35,19 @@ RECOMMENDED_MAX_SEARCH_RESULTS: Final = 5
 # xAI model definitions with reasoning support
 XAI_MODELS: Final = [
     {
+        "id": "grok-4-1-fast-reasoning",
+        "name": "Grok 4.1 Fast (Reasoning)",
+        "supports_reasoning": False,
+    },
+    {
+        "id": "grok-4-1-fast-non-reasoning",
+        "name": "Grok 4.1 Fast (Non-reasoning)",
+        "supports_reasoning": False,
+    },
+    {
         "id": "grok-4-fast-reasoning",
         "name": "Grok 4 Fast (Reasoning)",
-        "supports_reasoning": True,
+        "supports_reasoning": False,
     },
     {
         "id": "grok-4-fast-non-reasoning",
@@ -47,16 +57,6 @@ XAI_MODELS: Final = [
     {
         "id": "grok-4",
         "name": "Grok 4",
-        "supports_reasoning": True,
-    },
-    {
-        "id": "grok-3-mini",
-        "name": "Grok 3 Mini",
-        "supports_reasoning": True,
-    },
-    {
-        "id": "grok-3",
-        "name": "Grok 3",
         "supports_reasoning": True,
     },
     {
