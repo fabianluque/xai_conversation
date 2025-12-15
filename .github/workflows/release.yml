@@ -34,7 +34,7 @@ jobs:
           body: ${{ github.event.inputs.changelog }}
           token: ${{ secrets.GH_PAT }}
       - name: Upload manifest.json
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: manifest
           path: custom_components/xai_conversation/manifest.json
