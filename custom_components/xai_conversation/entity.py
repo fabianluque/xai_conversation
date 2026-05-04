@@ -50,6 +50,7 @@ except ImportError:  # pragma: no cover - best-effort import
 
 from .const import (
     CONF_CHAT_MODEL,
+    CONF_IMAGE_MODEL,
     CONF_LIVE_SEARCH,
     CONF_MAX_TOKENS,
     CONF_REASONING_EFFORT,
@@ -58,11 +59,13 @@ from .const import (
     DOMAIN,
     LOGGER,
     RECOMMENDED_CHAT_MODEL,
+    RECOMMENDED_IMAGE_MODEL,
     RECOMMENDED_LIVE_SEARCH,
     RECOMMENDED_MAX_TOKENS,
     RECOMMENDED_TEMPERATURE,
     RECOMMENDED_TOP_P,
-    XAI_MODELS,
+    XAI_CHAT_MODELS,
+    XAI_IMAGE_MODELS,
 )
 
 MAX_TOOL_ITERATIONS = 6
@@ -312,21 +315,47 @@ class XAIBaseEntity(Entity):
         if not reasoning_effort:
             return None
 
-        # Check if the selected model supports reasoning
-        model_supports_reasoning = any(
-            model_def["id"] == model and model_def["supports_reasoning"]
-            for model_def in XAI_MODELS
+        # Some models reason automatically but do not accept the
+        # reasoning_effort parameter.
+        model_supports_reasoning_effort = any(
+            model_def["id"] == model
+            and model_def.get("supports_reasoning_effort", False)
+            for model_def in XAI_CHAT_MODELS
         )
 
-        if not model_supports_reasoning:
+        if not model_supports_reasoning_effort:
             LOGGER.debug(
-                "Skipping reasoning effort %s for non-reasoning model %s",
+                "Skipping reasoning effort %s for model %s because "
+                "the parameter is unsupported",
                 reasoning_effort,
                 model,
             )
             return None
 
+        if reasoning_effort == "medium":
+            LOGGER.debug(
+                "Mapping legacy reasoning effort %s to low for model %s",
+                reasoning_effort,
+                model,
+            )
+            return "low"
+
         return reasoning_effort
+
+    def _resolve_image_model(self, options: dict[str, Any]) -> str:
+        """Choose a valid image model for image generation."""
+        image_model = options.get(CONF_IMAGE_MODEL)
+        if image_model:
+            return image_model
+
+        legacy_model = options.get(CONF_CHAT_MODEL)
+        if legacy_model == "grok-2-image":
+            return RECOMMENDED_IMAGE_MODEL
+
+        if any(model_def["id"] == legacy_model for model_def in XAI_IMAGE_MODELS):
+            return legacy_model
+
+        return RECOMMENDED_IMAGE_MODEL
 
     def _notify_chat_log_assistant_delta(
         self,

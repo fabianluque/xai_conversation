@@ -7,7 +7,6 @@ from typing import Final
 
 from homeassistant.const import CONF_LLM_HASS_API
 from homeassistant.helpers import llm
-from homeassistant.helpers.selector import SelectOptionDict
 
 DOMAIN: Final = "xai_conversation"
 DEFAULT_NAME: Final = "xAI Conversation"
@@ -22,55 +21,52 @@ CONF_PROMPT: Final = "prompt"
 CONF_RECOMMENDED: Final = "recommended"
 CONF_REASONING_EFFORT: Final = "reasoning_effort"
 CONF_LIVE_SEARCH: Final = "live_search"
-CONF_MAX_SEARCH_RESULTS: Final = "max_search_results"
+CONF_IMAGE_MODEL: Final = "image_model"
 
-RECOMMENDED_CHAT_MODEL: Final = "grok-4-fast-non-reasoning"
+RECOMMENDED_CHAT_MODEL: Final = "grok-4.3-latest"
+RECOMMENDED_IMAGE_MODEL: Final = "grok-imagine-image"
 RECOMMENDED_MAX_TOKENS: Final = 4096
 RECOMMENDED_TEMPERATURE: Final = 0.7
 RECOMMENDED_TOP_P: Final = 1.0
-RECOMMENDED_REASONING_EFFORT: Final = "medium"
 RECOMMENDED_LIVE_SEARCH: Final = False
-RECOMMENDED_MAX_SEARCH_RESULTS: Final = 5
 
 # xAI model definitions with reasoning support
-XAI_MODELS: Final = [
+XAI_CHAT_MODELS: Final = [
     {
         "id": "grok-4-1-fast-reasoning",
         "name": "Grok 4.1 Fast (Reasoning)",
-        "supports_reasoning": False,
+        "supports_reasoning": True,
+        "supports_reasoning_effort": False,
     },
     {
         "id": "grok-4-1-fast-non-reasoning",
         "name": "Grok 4.1 Fast (Non-reasoning)",
         "supports_reasoning": False,
+        "supports_reasoning_effort": False,
     },
     {
-        "id": "grok-4-fast-reasoning",
-        "name": "Grok 4 Fast (Reasoning)",
-        "supports_reasoning": False,
-    },
-    {
-        "id": "grok-4-fast-non-reasoning",
-        "name": "Grok 4 Fast (Non-reasoning)",
-        "supports_reasoning": False,
-    },
-    {
-        "id": "grok-4",
-        "name": "Grok 4",
+        "id": "grok-4.3",
+        "name": "Grok 4.3",
         "supports_reasoning": True,
+        "supports_reasoning_effort": False,
     },
     {
-        "id": "grok-2-image",
-        "name": "Grok 2 Image",
-        "supports_reasoning": False,
+        "id": "grok-4.3-latest",
+        "name": "Grok 4.3 Latest",
+        "supports_reasoning": True,
+        "supports_reasoning_effort": False,
     },
 ]
 
-# Reasoning effort options
-REASONING_OPTIONS: Final = [
-    SelectOptionDict(value="low", label="Low"),
-    SelectOptionDict(value="medium", label="Medium"),
-    SelectOptionDict(value="high", label="High"),
+XAI_IMAGE_MODELS: Final = [
+    {
+        "id": "grok-imagine-image",
+        "name": "Grok Imagine Image",
+    },
+    {
+        "id": "grok-imagine-image-pro",
+        "name": "Grok Imagine Image Pro",
+    },
 ]
 
 LOGGER = logging.getLogger(__package__)
@@ -89,6 +85,7 @@ RECOMMENDED_CONVERSATION_OPTIONS: Final = {
 RECOMMENDED_AI_TASK_OPTIONS: Final = {
     CONF_RECOMMENDED: True,
     CONF_CHAT_MODEL: RECOMMENDED_CHAT_MODEL,
+    CONF_IMAGE_MODEL: RECOMMENDED_IMAGE_MODEL,
     CONF_MAX_TOKENS: RECOMMENDED_MAX_TOKENS,
     CONF_TEMPERATURE: RECOMMENDED_TEMPERATURE,
     CONF_TOP_P: RECOMMENDED_TOP_P,
