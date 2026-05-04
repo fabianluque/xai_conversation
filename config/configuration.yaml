@@ -4,6 +4,8 @@ default_config:
 # https://www.home-assistant.io/integrations/homeassistant/
 homeassistant:
   debug: true
+  media_dirs:
+    local: /workspaces/xai-conversation/config/media
 
 # https://www.home-assistant.io/integrations/logger/
 logger:

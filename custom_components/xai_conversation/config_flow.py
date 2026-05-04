@@ -30,10 +30,10 @@ from xai_sdk.aio.client import Client as XAIAsyncClient
 
 from .const import (
     CONF_CHAT_MODEL,
+    CONF_IMAGE_MODEL,
     CONF_LIVE_SEARCH,
     CONF_MAX_TOKENS,
     CONF_PROMPT,
-    CONF_REASONING_EFFORT,
     CONF_RECOMMENDED,
     CONF_TEMPERATURE,
     CONF_TOP_P,
@@ -41,16 +41,16 @@ from .const import (
     DEFAULT_CONVERSATION_NAME,
     DOMAIN,
     LOGGER,
-    REASONING_OPTIONS,
     RECOMMENDED_AI_TASK_OPTIONS,
     RECOMMENDED_CHAT_MODEL,
     RECOMMENDED_CONVERSATION_OPTIONS,
+    RECOMMENDED_IMAGE_MODEL,
     RECOMMENDED_LIVE_SEARCH,
     RECOMMENDED_MAX_TOKENS,
-    RECOMMENDED_REASONING_EFFORT,
     RECOMMENDED_TEMPERATURE,
     RECOMMENDED_TOP_P,
-    XAI_MODELS,
+    XAI_CHAT_MODELS,
+    XAI_IMAGE_MODELS,
 )
 
 STEP_USER_DATA_SCHEMA = vol.Schema({vol.Required(CONF_API_KEY): str})
@@ -248,7 +248,7 @@ class XAIConversationFlowHandler(ConfigSubentryFlow):
         # Create model options for dropdown
         model_options: list[SelectOptionDict] = [
             SelectOptionDict(value=model["id"], label=model["name"])
-            for model in XAI_MODELS
+            for model in XAI_CHAT_MODELS
         ]
 
         step_schema: dict[Any, Any] = {
@@ -273,18 +273,6 @@ class XAIConversationFlowHandler(ConfigSubentryFlow):
                 CONF_TOP_P,
                 default=options.get(CONF_TOP_P, RECOMMENDED_TOP_P),
             ): NumberSelector(NumberSelectorConfig(min=0, max=1, step=0.05)),
-            # Always show reasoning effort field - only used for supporting models
-            vol.Optional(
-                CONF_REASONING_EFFORT,
-                default=options.get(
-                    CONF_REASONING_EFFORT, RECOMMENDED_REASONING_EFFORT
-                ),
-            ): SelectSelector(
-                SelectSelectorConfig(
-                    options=REASONING_OPTIONS,
-                    translation_key=CONF_REASONING_EFFORT,
-                )
-            ),
             vol.Optional(
                 CONF_LIVE_SEARCH,
                 default=options.get(CONF_LIVE_SEARCH, RECOMMENDED_LIVE_SEARCH),
@@ -388,9 +376,13 @@ class XAIaiTaskDataFlowHandler(ConfigSubentryFlow):
         options = self.options
 
         # Create model options for dropdown
-        model_options: list[SelectOptionDict] = [
+        chat_model_options: list[SelectOptionDict] = [
             SelectOptionDict(value=model["id"], label=model["name"])
-            for model in XAI_MODELS
+            for model in XAI_CHAT_MODELS
+        ]
+        image_model_options: list[SelectOptionDict] = [
+            SelectOptionDict(value=model["id"], label=model["name"])
+            for model in XAI_IMAGE_MODELS
         ]
 
         step_schema: dict[Any, Any] = {
@@ -399,7 +391,16 @@ class XAIaiTaskDataFlowHandler(ConfigSubentryFlow):
                 default=options.get(CONF_CHAT_MODEL, RECOMMENDED_CHAT_MODEL),
             ): SelectSelector(
                 SelectSelectorConfig(
-                    options=model_options,
+                    options=chat_model_options,
+                    mode=SelectSelectorMode.DROPDOWN,
+                )
+            ),
+            vol.Required(
+                CONF_IMAGE_MODEL,
+                default=options.get(CONF_IMAGE_MODEL, RECOMMENDED_IMAGE_MODEL),
+            ): SelectSelector(
+                SelectSelectorConfig(
+                    options=image_model_options,
                     mode=SelectSelectorMode.DROPDOWN,
                 )
             ),
@@ -415,18 +416,6 @@ class XAIaiTaskDataFlowHandler(ConfigSubentryFlow):
                 CONF_TOP_P,
                 default=options.get(CONF_TOP_P, RECOMMENDED_TOP_P),
             ): NumberSelector(NumberSelectorConfig(min=0, max=1, step=0.05)),
-            # Always show reasoning effort field - only used for supporting models
-            vol.Optional(
-                CONF_REASONING_EFFORT,
-                default=options.get(
-                    CONF_REASONING_EFFORT, RECOMMENDED_REASONING_EFFORT
-                ),
-            ): SelectSelector(
-                SelectSelectorConfig(
-                    options=REASONING_OPTIONS,
-                    translation_key=CONF_REASONING_EFFORT,
-                )
-            ),
             vol.Optional(
                 CONF_LIVE_SEARCH,
                 default=options.get(CONF_LIVE_SEARCH, RECOMMENDED_LIVE_SEARCH),

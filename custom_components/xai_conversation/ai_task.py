@@ -12,7 +12,7 @@ from homeassistant.helpers import llm
 from voluptuous_openapi import convert
 from xai_sdk.proto import chat_pb2
 
-from .const import CONF_CHAT_MODEL, LOGGER, RECOMMENDED_CHAT_MODEL
+from .const import LOGGER
 from .entity import XAIBaseEntity
 
 if TYPE_CHECKING:
@@ -57,10 +57,8 @@ class XAITaskEntity(
         self._attr_supported_features = (
             ai_task.AITaskEntityFeature.GENERATE_DATA
             | ai_task.AITaskEntityFeature.SUPPORT_ATTACHMENTS
+            | ai_task.AITaskEntityFeature.GENERATE_IMAGE
         )
-        # xAI supports image generation through certain models
-        # For now, we'll assume image generation is supported
-        self._attr_supported_features |= ai_task.AITaskEntityFeature.GENERATE_IMAGE
 
     async def _async_generate_data(
         self,
@@ -141,8 +139,7 @@ class XAITaskEntity(
             msg = "No prompt provided for image generation"
             raise HomeAssistantError(msg)
 
-        options = self.subentry.data
-        model = options.get(CONF_CHAT_MODEL, RECOMMENDED_CHAT_MODEL)
+        model = self._resolve_image_model(self.subentry.data)
 
         client = self.entry.runtime_data
 
