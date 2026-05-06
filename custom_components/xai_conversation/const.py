@@ -28,6 +28,7 @@ RECOMMENDED_IMAGE_MODEL: Final = "grok-imagine-image"
 RECOMMENDED_MAX_TOKENS: Final = 4096
 RECOMMENDED_TEMPERATURE: Final = 0.7
 RECOMMENDED_TOP_P: Final = 1.0
+RECOMMENDED_REASONING_EFFORT: Final = "low"
 RECOMMENDED_LIVE_SEARCH: Final = False
 
 # xAI model definitions with reasoning support
@@ -48,13 +49,13 @@ XAI_CHAT_MODELS: Final = [
         "id": "grok-4.3",
         "name": "Grok 4.3",
         "supports_reasoning": True,
-        "supports_reasoning_effort": False,
+        "supports_reasoning_effort": True,
     },
     {
         "id": "grok-4.3-latest",
         "name": "Grok 4.3 Latest",
         "supports_reasoning": True,
-        "supports_reasoning_effort": False,
+        "supports_reasoning_effort": True,
     },
 ]
 
@@ -74,6 +75,7 @@ LOGGER = logging.getLogger(__package__)
 RECOMMENDED_CONVERSATION_OPTIONS: Final = {
     CONF_RECOMMENDED: True,
     CONF_CHAT_MODEL: RECOMMENDED_CHAT_MODEL,
+    CONF_REASONING_EFFORT: RECOMMENDED_REASONING_EFFORT,
     CONF_MAX_TOKENS: RECOMMENDED_MAX_TOKENS,
     CONF_TEMPERATURE: RECOMMENDED_TEMPERATURE,
     CONF_TOP_P: RECOMMENDED_TOP_P,
@@ -86,6 +88,7 @@ RECOMMENDED_AI_TASK_OPTIONS: Final = {
     CONF_RECOMMENDED: True,
     CONF_CHAT_MODEL: RECOMMENDED_CHAT_MODEL,
     CONF_IMAGE_MODEL: RECOMMENDED_IMAGE_MODEL,
+    CONF_REASONING_EFFORT: RECOMMENDED_REASONING_EFFORT,
     CONF_MAX_TOKENS: RECOMMENDED_MAX_TOKENS,
     CONF_TEMPERATURE: RECOMMENDED_TEMPERATURE,
     CONF_TOP_P: RECOMMENDED_TOP_P,

@@ -35,6 +35,7 @@ from .const import (
     CONF_MAX_TOKENS,
     CONF_PROMPT,
     CONF_RECOMMENDED,
+    CONF_REASONING_EFFORT,
     CONF_TEMPERATURE,
     CONF_TOP_P,
     DEFAULT_AI_TASK_NAME,
@@ -47,11 +48,17 @@ from .const import (
     RECOMMENDED_IMAGE_MODEL,
     RECOMMENDED_LIVE_SEARCH,
     RECOMMENDED_MAX_TOKENS,
+    RECOMMENDED_REASONING_EFFORT,
     RECOMMENDED_TEMPERATURE,
     RECOMMENDED_TOP_P,
     XAI_CHAT_MODELS,
     XAI_IMAGE_MODELS,
 )
+
+REASONING_EFFORT_OPTIONS: list[SelectOptionDict] = [
+    SelectOptionDict(value="low", label="Low"),
+    SelectOptionDict(value="high", label="High"),
+]
 
 STEP_USER_DATA_SCHEMA = vol.Schema({vol.Required(CONF_API_KEY): str})
 
@@ -262,6 +269,17 @@ class XAIConversationFlowHandler(ConfigSubentryFlow):
                 )
             ),
             vol.Optional(
+                CONF_REASONING_EFFORT,
+                default=options.get(
+                    CONF_REASONING_EFFORT, RECOMMENDED_REASONING_EFFORT
+                ),
+            ): SelectSelector(
+                SelectSelectorConfig(
+                    options=REASONING_EFFORT_OPTIONS,
+                    mode=SelectSelectorMode.DROPDOWN,
+                )
+            ),
+            vol.Optional(
                 CONF_MAX_TOKENS,
                 default=options.get(CONF_MAX_TOKENS, RECOMMENDED_MAX_TOKENS),
             ): vol.All(int, vol.Range(min=1)),
@@ -392,6 +410,17 @@ class XAIaiTaskDataFlowHandler(ConfigSubentryFlow):
             ): SelectSelector(
                 SelectSelectorConfig(
                     options=chat_model_options,
+                    mode=SelectSelectorMode.DROPDOWN,
+                )
+            ),
+            vol.Optional(
+                CONF_REASONING_EFFORT,
+                default=options.get(
+                    CONF_REASONING_EFFORT, RECOMMENDED_REASONING_EFFORT
+                ),
+            ): SelectSelector(
+                SelectSelectorConfig(
+                    options=REASONING_EFFORT_OPTIONS,
                     mode=SelectSelectorMode.DROPDOWN,
                 )
             ),

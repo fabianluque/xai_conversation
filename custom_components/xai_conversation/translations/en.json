@@ -42,6 +42,7 @@
           "title": "Advanced settings",
           "data": {
             "chat_model": "Model",
+            "reasoning_effort": "Reasoning effort",
             "image_model": "Image model",
             "max_tokens": "Maximum tokens",
             "temperature": "Temperature",
@@ -49,6 +50,7 @@
             "live_search": "Search the web and X"
           },
           "data_description": {
+            "reasoning_effort": "Controls how much Grok 4.3 reasons before responding.",
             "image_model": "Model to use for image generation tasks.",
             "live_search": "Enable web and X (Twitter) search for the latest information."
           }
@@ -76,12 +78,14 @@
           "title": "Advanced settings",
           "data": {
             "chat_model": "Model",
+            "reasoning_effort": "Reasoning effort",
             "max_tokens": "Maximum tokens",
             "temperature": "Temperature",
             "top_p": "Top P",
             "live_search": "Search the web and X"
           },
           "data_description": {
+            "reasoning_effort": "Controls how much Grok 4.3 reasons before responding.",
             "live_search": "Enable web and X (Twitter) search for the latest information."
           }
         }
