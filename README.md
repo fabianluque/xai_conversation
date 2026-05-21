@@ -9,23 +9,17 @@ Interact with xAI's Grok models directly from Home Assistant's Conversation plat
 ## ✨ Features
 
 ### Conversation Agents
-- **Multiple Grok models** supported:
-  - `grok-4-fast-reasoning` - Fast model with reasoning capabilities
-  - `grok-4-fast-non-reasoning` - Fast model optimized for speed (recommended)
-  - `grok-4` - Full Grok 4 with reasoning
-  - `grok-3` - Grok 3 with reasoning
-  - `grok-3-mini` - Smaller Grok 3 with reasoning
-  - `grok-2-image` - Image generation model
+- **Grok 4.3** supported for text generation
 - **Streaming responses** for real-time interaction
 - **Live search** with configurable max results (1-50) to fetch fresh information
-- **Reasoning effort control** (low, medium, high) for models that support it
+- **Reasoning effort control** (`none`, `low`, `medium`, `high`) with `none` as the recommended default
 - Full support for **Home Assistant LLM tools** and conversation history
 - **Image attachments** support in conversations
 - Advanced tuning: max tokens, temperature, top-p, custom system prompts
 
 ### AI Task Support
 - **Generate structured data** with automatic JSON schema validation
-- **Generate images** using `grok-2-image` model
+- **Generate images** using `grok-imagine-image`
 - Support for **attachments** in AI tasks
 - Seamless integration with Home Assistant's AI Task platform
 
@@ -53,7 +47,7 @@ Interact with xAI's Grok models directly from Home Assistant's Conversation plat
 
 1. Copy the `custom_components/xai_conversation` folder into your Home Assistant `config/custom_components` directory.
 2. Restart Home Assistant to load the new integration.
-3. (Optional) If you manage dependencies manually, ensure `xai-sdk==1.12.1` is available to Home Assistant.
+3. (Optional) If you manage dependencies manually, ensure `xai-sdk==1.12.2` is available to Home Assistant.
 
 ## ⚙️ Configuration
 
@@ -70,11 +64,11 @@ When you uncheck **Use recommended settings**, the following fields become edita
 
 | Option | Description | Default |
 | --- | --- | --- |
-| **Chat model** | Grok model to use for the conversation. | `grok-4-fast-non-reasoning` |
+| **Chat model** | Grok model to use for the conversation. | `grok-4.3` |
 | **Max tokens** | Upper bound for generated response length. | `4096` |
 | **Temperature** | Sampling temperature for creativity (0-2). | `0.7` |
 | **Top-p** | Nucleus sampling threshold (0-1). | `1.0` |
-| **Reasoning effort** | Controls Grok's reasoning depth (low/medium/high). Only applies to reasoning models. | `medium` |
+| **Reasoning effort** | Controls Grok's reasoning depth (`none`/low/medium/high). `none` disables reasoning. | `none` |
 | **Live search** | If enabled, Grok augments responses with real-time information. | Disabled |
 | **Max search results** | Maximum number of search results to include (1-50). Only applies when live search is enabled. | `5` |
 | **Prompt** | Custom system prompt to scope the agent. | Home Assistant default |
@@ -85,9 +79,9 @@ When you uncheck **Use recommended settings**, the following fields become edita
 AI Task entities support the same configuration options as conversation agents (except Prompt and LLM APIs):
 
 - **Generate Data**: Returns structured JSON data based on your schema. Uses the configured chat model with JSON schema validation.
-- **Generate Image**: Creates images using `grok-2-image` model based on text prompts. Returns base64-encoded image data (JPEG or PNG).
+- **Generate Image**: Creates images using `grok-imagine-image` based on text prompts. Returns base64-encoded image data (JPEG or PNG).
 
-When configuring an AI Task entity, you can choose any model, but `grok-2-image` is required for image generation tasks.
+When configuring an AI Task entity, Grok 4.3 is used for text tasks and `grok-imagine-image` is used for image generation tasks.
 
 ## � Usage Examples
 
@@ -151,7 +145,7 @@ data:
   prompt: "A futuristic smart home with holographic displays and ambient lighting"
 ```
 
-**Note**: For image generation, ensure your AI Task entity is configured to use the `grok-2-image` model.
+**Note**: For image generation, ensure your AI Task entity is configured to use the `grok-imagine-image` model.
 
 ### Using Live Search
 
@@ -167,9 +161,9 @@ Enable live search for up-to-date information:
 
 ### Reasoning Effort
 
-For complex tasks with reasoning models (`grok-4`, `grok-3`, etc.):
+For complex tasks with Grok 4.3:
 
-1. Configure your entity with a reasoning model
+1. Configure your entity to use Grok 4.3
 2. Set reasoning effort to "high" for complex problems
 3. Ask complex questions:
    - "Analyze my energy usage patterns and suggest optimizations"

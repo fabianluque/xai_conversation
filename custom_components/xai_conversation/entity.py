@@ -332,14 +332,6 @@ class XAIBaseEntity(Entity):
             )
             return None
 
-        if reasoning_effort == "medium":
-            LOGGER.debug(
-                "Mapping legacy reasoning effort %s to low for model %s",
-                reasoning_effort,
-                model,
-            )
-            return "low"
-
         return reasoning_effort
 
     def _resolve_image_model(self, options: dict[str, Any]) -> str:

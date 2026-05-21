@@ -56,7 +56,9 @@ from .const import (
 )
 
 REASONING_EFFORT_OPTIONS: list[SelectOptionDict] = [
+    SelectOptionDict(value="none", label="None"),
     SelectOptionDict(value="low", label="Low"),
+    SelectOptionDict(value="medium", label="Medium"),
     SelectOptionDict(value="high", label="High"),
 ]
 

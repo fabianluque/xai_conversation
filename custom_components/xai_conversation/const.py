@@ -23,37 +23,19 @@ CONF_REASONING_EFFORT: Final = "reasoning_effort"
 CONF_LIVE_SEARCH: Final = "live_search"
 CONF_IMAGE_MODEL: Final = "image_model"
 
-RECOMMENDED_CHAT_MODEL: Final = "grok-4.3-latest"
+RECOMMENDED_CHAT_MODEL: Final = "grok-4.3"
 RECOMMENDED_IMAGE_MODEL: Final = "grok-imagine-image"
 RECOMMENDED_MAX_TOKENS: Final = 4096
 RECOMMENDED_TEMPERATURE: Final = 0.7
 RECOMMENDED_TOP_P: Final = 1.0
-RECOMMENDED_REASONING_EFFORT: Final = "low"
+RECOMMENDED_REASONING_EFFORT: Final = "none"
 RECOMMENDED_LIVE_SEARCH: Final = False
 
 # xAI model definitions with reasoning support
 XAI_CHAT_MODELS: Final = [
     {
-        "id": "grok-4-1-fast-reasoning",
-        "name": "Grok 4.1 Fast (Reasoning)",
-        "supports_reasoning": True,
-        "supports_reasoning_effort": False,
-    },
-    {
-        "id": "grok-4-1-fast-non-reasoning",
-        "name": "Grok 4.1 Fast (Non-reasoning)",
-        "supports_reasoning": False,
-        "supports_reasoning_effort": False,
-    },
-    {
         "id": "grok-4.3",
         "name": "Grok 4.3",
-        "supports_reasoning": True,
-        "supports_reasoning_effort": True,
-    },
-    {
-        "id": "grok-4.3-latest",
-        "name": "Grok 4.3 Latest",
         "supports_reasoning": True,
         "supports_reasoning_effort": True,
     },
@@ -63,10 +45,6 @@ XAI_IMAGE_MODELS: Final = [
     {
         "id": "grok-imagine-image",
         "name": "Grok Imagine Image",
-    },
-    {
-        "id": "grok-imagine-image-pro",
-        "name": "Grok Imagine Image Pro",
     },
 ]
 
