@@ -27,7 +27,7 @@ jobs:
           jq ".version = \"$VERSION_NO_V\"" custom_components/xai_conversation/manifest.json > manifest.tmp && mv manifest.tmp custom_components/xai_conversation/manifest.json
         shell: bash
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.event.inputs.tag }}
           name: ${{ github.event.inputs.tag }}
