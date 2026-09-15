@@ -13,7 +13,6 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import llm
 from homeassistant.helpers.entity import Entity
-from voluptuous_openapi import convert
 from xai_sdk.chat import (
     image as chat_image,
 )
@@ -67,6 +66,7 @@ from .const import (
     XAI_CHAT_MODELS,
     XAI_IMAGE_MODELS,
 )
+from .tool_schema import format_tool_parameters
 
 MAX_TOOL_ITERATIONS = 6
 
@@ -285,18 +285,21 @@ class XAIBaseEntity(Entity):
                 if chat_log.llm_api.custom_serializer
                 else llm.selector_serializer
             )
-            tools.extend(
-                [
-                    chat_tool(
-                        name=tool.name,
-                        description=tool.description,
-                        parameters=convert(
-                            tool.parameters, custom_serializer=serializer
-                        ),
+            for tool in chat_log.llm_api.tools:
+                try:
+                    tools.append(
+                        chat_tool(
+                            name=tool.name,
+                            description=tool.description or "",
+                            parameters=format_tool_parameters(
+                                tool.parameters, custom_serializer=serializer
+                            ),
+                        )
                     )
-                    for tool in chat_log.llm_api.tools
-                ]
-            )
+                except Exception:  # noqa: BLE001 - skip tools xAI cannot accept
+                    LOGGER.exception(
+                        "Skipping Home Assistant tool %s for xAI", tool.name
+                    )
 
         # Add xAI agentic tools when search is enabled
         if options.get(CONF_LIVE_SEARCH, RECOMMENDED_LIVE_SEARCH):

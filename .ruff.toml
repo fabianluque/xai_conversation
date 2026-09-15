@@ -23,3 +23,10 @@ keep-runtime-typing = true
 
 [lint.mccabe]
 max-complexity = 25
+
+[lint.per-file-ignores]
+"tests/**/*.py" = [
+    "S101", # assert is fine in tests
+    "INP001", # tests are not a package
+    "D", # do not require docstrings in tests
+]
