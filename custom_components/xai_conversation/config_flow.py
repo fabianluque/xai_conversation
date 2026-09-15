@@ -60,6 +60,7 @@ REASONING_EFFORT_OPTIONS: list[SelectOptionDict] = [
     SelectOptionDict(value="low", label="Low"),
     SelectOptionDict(value="medium", label="Medium"),
     SelectOptionDict(value="high", label="High"),
+    SelectOptionDict(value="xhigh", label="Extra high"),
 ]
 
 STEP_USER_DATA_SCHEMA = vol.Schema({vol.Required(CONF_API_KEY): str})
