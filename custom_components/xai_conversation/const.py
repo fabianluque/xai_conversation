@@ -8,6 +8,16 @@ from typing import Final
 from homeassistant.const import CONF_LLM_HASS_API
 from homeassistant.helpers import llm
 
+from .models import (
+    RECOMMENDED_CHAT_MODEL,
+    RECOMMENDED_IMAGE_MODEL,
+    RECOMMENDED_REASONING_EFFORT,
+    XAI_CHAT_MODELS,
+    XAI_IMAGE_MODELS,
+    get_chat_model,
+    resolve_chat_reasoning_effort,
+)
+
 DOMAIN: Final = "xai_conversation"
 DEFAULT_NAME: Final = "xAI Conversation"
 DEFAULT_CONVERSATION_NAME: Final = DEFAULT_NAME
@@ -23,32 +33,42 @@ CONF_REASONING_EFFORT: Final = "reasoning_effort"
 CONF_LIVE_SEARCH: Final = "live_search"
 CONF_IMAGE_MODEL: Final = "image_model"
 
-RECOMMENDED_CHAT_MODEL: Final = "grok-4.3"
-RECOMMENDED_IMAGE_MODEL: Final = "grok-imagine-image"
 RECOMMENDED_MAX_TOKENS: Final = 4096
 RECOMMENDED_TEMPERATURE: Final = 0.7
 RECOMMENDED_TOP_P: Final = 1.0
-RECOMMENDED_REASONING_EFFORT: Final = "none"
 RECOMMENDED_LIVE_SEARCH: Final = False
 
-# xAI model definitions with reasoning support
-XAI_CHAT_MODELS: Final = [
-    {
-        "id": "grok-4.3",
-        "name": "Grok 4.3",
-        "supports_reasoning": True,
-        "supports_reasoning_effort": True,
-    },
-]
-
-XAI_IMAGE_MODELS: Final = [
-    {
-        "id": "grok-imagine-image",
-        "name": "Grok Imagine Image",
-    },
-]
-
 LOGGER = logging.getLogger(__package__)
+
+__all__ = [
+    "CONF_CHAT_MODEL",
+    "CONF_IMAGE_MODEL",
+    "CONF_LIVE_SEARCH",
+    "CONF_MAX_TOKENS",
+    "CONF_PROMPT",
+    "CONF_REASONING_EFFORT",
+    "CONF_RECOMMENDED",
+    "CONF_TEMPERATURE",
+    "CONF_TOP_P",
+    "DEFAULT_AI_TASK_NAME",
+    "DEFAULT_CONVERSATION_NAME",
+    "DEFAULT_NAME",
+    "DOMAIN",
+    "LOGGER",
+    "RECOMMENDED_AI_TASK_OPTIONS",
+    "RECOMMENDED_CHAT_MODEL",
+    "RECOMMENDED_CONVERSATION_OPTIONS",
+    "RECOMMENDED_IMAGE_MODEL",
+    "RECOMMENDED_LIVE_SEARCH",
+    "RECOMMENDED_MAX_TOKENS",
+    "RECOMMENDED_REASONING_EFFORT",
+    "RECOMMENDED_TEMPERATURE",
+    "RECOMMENDED_TOP_P",
+    "XAI_CHAT_MODELS",
+    "XAI_IMAGE_MODELS",
+    "get_chat_model",
+    "resolve_chat_reasoning_effort",
+]
 
 RECOMMENDED_CONVERSATION_OPTIONS: Final = {
     CONF_RECOMMENDED: True,

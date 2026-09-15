@@ -5,17 +5,17 @@ Interact with xAI's Grok models directly from Home Assistant's Conversation plat
 ## ✨ Features
 
 ### Conversation Agents
-- **Grok 4.3** supported for text generation
+- **Grok 4.6 / 4.5 / 4.3** supported for text generation (default: Grok 4.6)
 - **Streaming responses** for real-time interaction
 - **Live search** with configurable max results (1-50) to fetch fresh information
-- **Reasoning effort control** (`none`, `low`, `medium`, `high`) with `none` as the recommended default
+- **Reasoning effort control** (`none`, `low`, `medium`, `high`, `xhigh`) with `low` as the recommended default for Grok 4.6
 - Full support for **Home Assistant LLM tools** and conversation history
 - **Image attachments** support in conversations
 - Advanced tuning: max tokens, temperature, top-p, custom system prompts
 
 ### AI Task Support
 - **Generate structured data** with automatic JSON schema validation
-- **Generate images** using `grok-imagine-image`
+- **Generate images** using `grok-imagine-image-2.0` (default) or `grok-imagine-image`
 - Support for **attachments** in AI tasks
 - Seamless integration with Home Assistant's AI Task platform
 
@@ -39,11 +39,11 @@ When you uncheck **Use recommended settings**, the following fields become edita
 
 | Option | Description | Default |
 | --- | --- | --- |
-| **Chat model** | Grok model to use for the conversation. | `grok-4.3` |
+| **Chat model** | Grok model to use for the conversation. | `grok-4.6` |
 | **Max tokens** | Upper bound for generated response length. | `4096` |
 | **Temperature** | Sampling temperature for creativity (0-2). | `0.7` |
 | **Top-p** | Nucleus sampling threshold (0-1). | `1.0` |
-| **Reasoning effort** | Controls Grok's reasoning depth (`none`/low/medium/high). `none` disables reasoning. | `none` |
+| **Reasoning effort** | Controls Grok's reasoning depth (`none`/low/medium/high/`xhigh`). `none` disables reasoning on models that support it; on 4.5/4.6 it maps to `low`. | `low` |
 | **Live search** | If enabled, Grok augments responses with real-time information. | Disabled |
 | **Max search results** | Maximum number of search results to include (1-50). Only applies when live search is enabled. | `5` |
 | **Prompt** | Custom system prompt to scope the agent. | Home Assistant default |
@@ -54,9 +54,9 @@ When you uncheck **Use recommended settings**, the following fields become edita
 AI Task entities support the same configuration options as conversation agents (except Prompt and LLM APIs):
 
 - **Generate Data**: Returns structured JSON data based on your schema. Uses the configured chat model with JSON schema validation.
-- **Generate Image**: Creates images using `grok-imagine-image` based on text prompts. Returns base64-encoded image data (JPEG or PNG).
+- **Generate Image**: Creates images using `grok-imagine-image-2.0` (or `grok-imagine-image`) based on text prompts. Returns base64-encoded image data (JPEG or PNG).
 
-When configuring an AI Task entity, Grok 4.3 is used for text tasks and `grok-imagine-image` is used for image generation tasks.
+When configuring an AI Task entity, Grok 4.6 is used for text tasks and `grok-imagine-image-2.0` is used for image generation tasks.
 
 ## 📖 Usage Examples
 
@@ -120,7 +120,7 @@ data:
   prompt: "A futuristic smart home with holographic displays and ambient lighting"
 ```
 
-**Note**: For image generation, ensure your AI Task entity is configured to use the `grok-imagine-image` model.
+**Note**: For image generation, ensure your AI Task entity is configured to use `grok-imagine-image-2.0` (or `grok-imagine-image`).
 
 ### Using Live Search
 
@@ -136,10 +136,10 @@ Enable live search for up-to-date information:
 
 ### Reasoning Effort
 
-For complex tasks with Grok 4.3:
+For complex tasks with Grok 4.6 (or 4.5 / 4.3):
 
-1. Configure your entity to use Grok 4.3
-2. Set reasoning effort to "high" for complex problems
+1. Configure your entity to use the desired Grok chat model
+2. Set reasoning effort to `high` or `xhigh` for complex problems (`none` only disables reasoning on models that support it, such as Grok 4.3)
 3. Ask complex questions:
    - "Analyze my energy usage patterns and suggest optimizations"
    - "Help me debug why my automation isn't working"

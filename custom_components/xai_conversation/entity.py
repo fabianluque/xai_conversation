@@ -63,8 +63,8 @@ from .const import (
     RECOMMENDED_MAX_TOKENS,
     RECOMMENDED_TEMPERATURE,
     RECOMMENDED_TOP_P,
-    XAI_CHAT_MODELS,
     XAI_IMAGE_MODELS,
+    resolve_chat_reasoning_effort,
 )
 from .tool_schema import format_tool_parameters
 
@@ -315,27 +315,15 @@ class XAIBaseEntity(Entity):
     ) -> str | None:
         """Choose a valid reasoning effort for the selected model."""
         reasoning_effort = options.get(CONF_REASONING_EFFORT)
-        if not reasoning_effort:
-            return None
-
-        # Some models reason automatically but do not accept the
-        # reasoning_effort parameter.
-        model_supports_reasoning_effort = any(
-            model_def["id"] == model
-            and model_def.get("supports_reasoning_effort", False)
-            for model_def in XAI_CHAT_MODELS
-        )
-
-        if not model_supports_reasoning_effort:
+        resolved = resolve_chat_reasoning_effort(model, reasoning_effort)
+        if reasoning_effort and resolved != reasoning_effort:
             LOGGER.debug(
-                "Skipping reasoning effort %s for model %s because "
-                "the parameter is unsupported",
+                "Adjusted reasoning effort %s to %s for model %s",
                 reasoning_effort,
+                resolved,
                 model,
             )
-            return None
-
-        return reasoning_effort
+        return resolved
 
     def _resolve_image_model(self, options: dict[str, Any]) -> str:
         """Choose a valid image model for image generation."""
