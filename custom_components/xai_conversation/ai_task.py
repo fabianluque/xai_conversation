@@ -9,11 +9,12 @@ from typing import TYPE_CHECKING
 from homeassistant.components import ai_task, conversation
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import llm
-from voluptuous_openapi import convert
+from probatio import to_openapi
 from xai_sdk.proto import chat_pb2
 
 from .const import LOGGER
 from .entity import XAIBaseEntity
+from .tool_schema import sanitize_schema
 
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry, ConfigSubentry
@@ -70,13 +71,15 @@ class XAITaskEntity(
 
         # If a structure is provided, convert it to JSON schema for xAI
         if task.structure:
-            json_schema = convert(
-                task.structure,
-                custom_serializer=(
-                    chat_log.llm_api.custom_serializer
-                    if chat_log.llm_api
-                    else llm.selector_serializer
-                ),
+            json_schema = sanitize_schema(
+                to_openapi(
+                    task.structure,
+                    custom_serializer=(
+                        chat_log.llm_api.custom_serializer
+                        if chat_log.llm_api
+                        else llm.selector_serializer
+                    ),
+                )
             )
 
             response_format = chat_pb2.ResponseFormat()
