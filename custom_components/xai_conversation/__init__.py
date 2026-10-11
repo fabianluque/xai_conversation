@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Final
 
-import grpc
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_API_KEY, Platform
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import config_validation as cv
-from xai_sdk.aio.client import Client as XAIAsyncClient
+from homeassistant.helpers.httpx_client import get_async_client
 
+from .client import XAIClientError, XAIRestClient
 from .const import LOGGER
 
 if TYPE_CHECKING:
@@ -22,7 +22,7 @@ PLATFORMS: Final = (Platform.CONVERSATION, Platform.AI_TASK)
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN := "xai_conversation")
 
 
-type XAIConfigEntry = ConfigEntry[XAIAsyncClient]
+type XAIConfigEntry = ConfigEntry[XAIRestClient]
 
 
 async def async_setup(_hass: HomeAssistant, _config: ConfigType) -> bool:
@@ -32,11 +32,11 @@ async def async_setup(_hass: HomeAssistant, _config: ConfigType) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: XAIConfigEntry) -> bool:
     """Set up xAI Conversation from a config entry."""
-    client = XAIAsyncClient(api_key=entry.data[CONF_API_KEY], timeout=30)
+    client = XAIRestClient(entry.data[CONF_API_KEY], get_async_client(hass))
 
     try:
-        await client.models.list_language_models()
-    except grpc.RpcError as err:
+        await client.list_models()
+    except XAIClientError as err:
         LOGGER.error("Unable to connect to xAI: %s", err)
         raise ConfigEntryNotReady(err) from err
 

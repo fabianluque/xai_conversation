@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import Any
 
-import grpc
 import voluptuous as vol
 from homeassistant.config_entries import (
     ConfigEntry,
@@ -15,8 +14,9 @@ from homeassistant.config_entries import (
     SubentryFlowResult,
 )
 from homeassistant.const import CONF_API_KEY, CONF_LLM_HASS_API, CONF_NAME
-from homeassistant.core import callback
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import llm
+from homeassistant.helpers.httpx_client import get_async_client
 from homeassistant.helpers.selector import (
     NumberSelector,
     NumberSelectorConfig,
@@ -26,8 +26,8 @@ from homeassistant.helpers.selector import (
     SelectSelectorMode,
     TemplateSelector,
 )
-from xai_sdk.aio.client import Client as XAIAsyncClient
 
+from .client import XAIClientError, XAIRestClient
 from .const import (
     CONF_CHAT_MODEL,
     CONF_IMAGE_MODEL,
@@ -66,12 +66,12 @@ REASONING_EFFORT_OPTIONS: list[SelectOptionDict] = [
 STEP_USER_DATA_SCHEMA = vol.Schema({vol.Required(CONF_API_KEY): str})
 
 
-async def validate_input(data: dict[str, Any]) -> None:
+async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> None:
     """Validate the user input allows us to connect to xAI."""
-    client = XAIAsyncClient(api_key=data[CONF_API_KEY], timeout=15)
+    client = XAIRestClient(data[CONF_API_KEY], get_async_client(hass), timeout=15)
     try:
-        await client.models.list_language_models()
-    except grpc.RpcError as err:
+        await client.list_models()
+    except XAIClientError as err:
         msg = "cannot_connect"
         raise ValueError(msg) from err
 
@@ -95,7 +95,7 @@ class XAIConfigFlow(ConfigFlow, domain=DOMAIN):
 
         self._async_abort_entries_match(user_input)
         try:
-            await validate_input(user_input)
+            await validate_input(self.hass, user_input)
         except ValueError as err:
             errors["base"] = str(err)
         except Exception:  # noqa: BLE001

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import base64
 import json
 from typing import TYPE_CHECKING
 
@@ -10,8 +9,8 @@ from homeassistant.components import ai_task, conversation
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import llm
 from probatio import to_openapi
-from xai_sdk.proto import chat_pb2
 
+from .client import XAIClientError, json_schema_format
 from .const import LOGGER
 from .entity import XAIBaseEntity
 from .tool_schema import sanitize_schema
@@ -82,12 +81,10 @@ class XAITaskEntity(
                 )
             )
 
-            response_format = chat_pb2.ResponseFormat()
-            response_format.format_type = chat_pb2.FORMAT_TYPE_JSON_SCHEMA
-            response_format.schema = json.dumps(json_schema)
+            response_format = json_schema_format(json_schema)
             LOGGER.debug(
                 "Using structured output with schema: %s",
-                response_format.schema,
+                json.dumps(json_schema),
             )
 
         await self._async_handle_chat_log(chat_log, response_format=response_format)
@@ -147,50 +144,14 @@ class XAITaskEntity(
         client = self.entry.runtime_data
 
         try:
-            response = await client.image.sample(
+            image_data, mime_type = await client.generate_image(
                 prompt=prompt,
                 model=model,
-                image_format="base64",
             )
-        except Exception as err:
+        except XAIClientError as err:
             LOGGER.error("Failed to generate image: %s", err)
             msg = f"Failed to generate image: {err}"
             raise HomeAssistantError(msg) from err
-
-        # Get the image data from response
-        # Try base64 attribute first, then fallback to image property
-        image_data = getattr(response, "base64", None) or response.image
-
-        # Check if it's a coroutine and await if needed
-        if hasattr(image_data, "__await__"):
-            image_data = await image_data
-
-        if not image_data:
-            msg = "No image data received from xAI"
-            raise HomeAssistantError(msg)
-
-        # If image_data is a string, it's base64-encoded and needs to be decoded
-        if isinstance(image_data, str):
-            try:
-                # Strip data URI prefix if present (e.g., "data:image/jpeg;base64,")
-                if image_data.startswith("data:"):
-                    # Find the comma that separates the header from the data
-                    comma_index = image_data.find(",")
-                    if comma_index != -1:
-                        image_data = image_data[comma_index + 1 :]
-
-                image_data = base64.b64decode(image_data)
-            except Exception as err:
-                LOGGER.error("Failed to decode base64 image data: %s", err)
-                msg = f"Failed to decode image data: {err}"
-                raise HomeAssistantError(msg) from err
-
-        # Detect the image format from the magic bytes
-        mime_type = "image/jpeg"  # Default to JPEG as xAI returns JPEG
-        if image_data[:8] == b"\x89PNG\r\n\x1a\n":
-            mime_type = "image/png"
-        elif image_data[:2] == b"\xff\xd8":
-            mime_type = "image/jpeg"
 
         return ai_task.GenImageTaskResult(
             conversation_id=chat_log.conversation_id,

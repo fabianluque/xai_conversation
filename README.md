@@ -4,7 +4,7 @@
 [![GitHub Release](https://img.shields.io/github/release/fabianluque/xai_conversation.svg)](https://github.com/fabianluque/xai_conversation/releases)
 [![License](https://img.shields.io/github/license/fabianluque/xai_conversation.svg)](LICENSE)
 
-Interact with xAI's Grok models directly from Home Assistant's Conversation platform. The integration uses the official [`xai-sdk`](https://pypi.org/project/xai-sdk/) to provide fast responses, optional reasoning, and live search enrichment while keeping configuration in the Home Assistant UI.
+Interact with xAI's Grok models directly from Home Assistant's Conversation platform. The integration talks to the official [xAI REST / Responses API](https://docs.x.ai/) over Home Assistant's bundled `httpx` client, so it does not depend on `xai-sdk` (which cannot install on Home Assistant 2026.10 because of a protobuf constraint). It provides fast responses, optional reasoning, and live search enrichment while keeping configuration in the Home Assistant UI.
 
 ## ✨ Features
 
@@ -47,7 +47,7 @@ Interact with xAI's Grok models directly from Home Assistant's Conversation plat
 
 1. Copy the `custom_components/xai_conversation` folder into your Home Assistant `config/custom_components` directory.
 2. Restart Home Assistant to load the new integration.
-3. (Optional) If you manage dependencies manually, ensure `xai-sdk==1.12.2` is available to Home Assistant.
+3. Restart is enough — the integration uses libraries already shipped by Home Assistant and does not install extra Python packages.
 
 ## ⚙️ Configuration
 

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import base64
-import json
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -13,40 +12,18 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import llm
 from homeassistant.helpers.entity import Entity
-from xai_sdk.chat import (
-    image as chat_image,
-)
-from xai_sdk.chat import (
-    system as chat_system,
-)
-from xai_sdk.chat import (
-    text as chat_text,
-)
-from xai_sdk.chat import (
-    tool as chat_tool,
-)
-from xai_sdk.chat import (
-    tool_result as chat_tool_result,
-)
-from xai_sdk.chat import (
-    user as chat_user,
-)
-from xai_sdk.proto import chat_pb2
 
-try:
-    # Optional helper available in xAI SDK >= 1.4 to classify tool calls
-    from xai_sdk.tools import (
-        code_execution,
-        get_tool_call_type,  # type: ignore[import-not-found]
-        web_search,
-        x_search,
-    )
-except ImportError:  # pragma: no cover - best-effort import
-    get_tool_call_type = None
-    web_search = None  # type: ignore[assignment]
-    x_search = None  # type: ignore[assignment]
-    code_execution = None  # type: ignore[assignment]
-
+from .client import (
+    ResponseStreamParser,
+    XAIClientError,
+    assistant_items,
+    build_responses_payload,
+    function_tool,
+    live_search_tools,
+    system_message,
+    tool_result_item,
+    user_message,
+)
 from .const import (
     CONF_CHAT_MODEL,
     CONF_IMAGE_MODEL,
@@ -98,12 +75,10 @@ class XAIBaseEntity(Entity):
     async def _async_handle_chat_log(
         self,
         chat_log: conversation.ChatLog,
-        response_format: chat_pb2.ResponseFormat | None = None,
+        response_format: dict[str, Any] | None = None,
     ) -> None:
         """Generate a response for the provided chat log."""
         options = self.subentry.data
-        client = self.entry.runtime_data
-
         tools = self._build_tools(chat_log, options)
 
         for iteration in range(MAX_TOOL_ITERATIONS):
@@ -112,9 +87,8 @@ class XAIBaseEntity(Entity):
             model = options.get(CONF_CHAT_MODEL, RECOMMENDED_CHAT_MODEL)
             reasoning_effort = self._resolve_reasoning_effort(model, options)
 
-            chat_request = client.chat.create(
+            payload = build_responses_payload(
                 model=model,
-                conversation_id=chat_log.conversation_id,
                 messages=messages,
                 user=chat_log.conversation_id,
                 max_tokens=options.get(CONF_MAX_TOKENS, RECOMMENDED_MAX_TOKENS),
@@ -122,16 +96,17 @@ class XAIBaseEntity(Entity):
                 top_p=options.get(CONF_TOP_P, RECOMMENDED_TOP_P),
                 reasoning_effort=reasoning_effort,
                 tools=tools,
-                parallel_tool_calls=True,
                 response_format=response_format,
-                store_messages=False,
             )
 
-            (final_response) = await self._async_stream_chat_response(
-                chat_log, chat_request
-            )
+            try:
+                usage = await self._async_stream_chat_response(chat_log, payload)
+            except XAIClientError as err:
+                LOGGER.error("Error talking to xAI: %s", err)
+                msg = f"Error talking to xAI: {err}"
+                raise HomeAssistantError(msg) from err
 
-            self._log_usage(chat_log, final_response)
+            self._log_usage(chat_log, usage)
 
             if not chat_log.unresponded_tool_results:
                 break
@@ -146,12 +121,12 @@ class XAIBaseEntity(Entity):
 
     async def _async_build_messages(
         self, content: list[conversation.Content]
-    ) -> list[chat_pb2.Message]:
-        """Convert chat log content to xAI message objects."""
-        messages: list[chat_pb2.Message] = []
+    ) -> list[dict[str, Any]]:
+        """Convert chat log content to Responses API input items."""
+        messages: list[dict[str, Any]] = []
         for item in content:
             if isinstance(item, conversation.SystemContent):
-                messages.append(chat_system(item.content))
+                messages.append(system_message(item.content))
                 continue
 
             if isinstance(item, conversation.UserContent):
@@ -159,58 +134,51 @@ class XAIBaseEntity(Entity):
                 continue
 
             if isinstance(item, conversation.AssistantContent):
-                messages.append(self._assistant_message(item))
+                messages.extend(self._assistant_items(item))
                 continue
 
             if isinstance(item, conversation.ToolResultContent):
-                messages.append(chat_tool_result(json.dumps(item.tool_result)))
+                messages.append(tool_result_item(item.tool_call_id, item.tool_result))
                 continue
 
         return messages
 
     async def _async_user_message(
         self, item: conversation.UserContent
-    ) -> chat_pb2.Message:
+    ) -> dict[str, Any]:
         """Build a user message with optional attachments."""
-        parts: list[chat_pb2.Content] = []
-        if item.content:
-            parts.append(chat_text(item.content))
+        images: list[tuple[str, str]] = []
         if item.attachments:
-            parts.extend(
+            images.extend(
                 await asyncio.gather(
                     *(
-                        self._async_attachment_content(attachment)
+                        self._async_attachment_image(attachment)
                         for attachment in item.attachments
                     )
                 )
             )
-        return chat_user(*parts) if parts else chat_user(chat_text(""))
+        return user_message(item.content, images)
 
-    def _assistant_message(
+    def _assistant_items(
         self, item: conversation.AssistantContent
-    ) -> chat_pb2.Message:
-        """Build an assistant message including tool calls."""
-        message = chat_pb2.Message(role=chat_pb2.MessageRole.ROLE_ASSISTANT)
-        if item.content:
-            message.content.extend([chat_text(item.content)])
+    ) -> list[dict[str, Any]]:
+        """Build assistant text and function_call items."""
+        tool_calls: list[dict[str, Any]] = []
         if item.tool_calls:
-            for tool_call in item.tool_calls:
-                arguments = json.dumps(tool_call.tool_args)
-                message.tool_calls.append(
-                    chat_pb2.ToolCall(
-                        id=tool_call.id,
-                        function=chat_pb2.FunctionCall(
-                            name=tool_call.tool_name,
-                            arguments=arguments,
-                        ),
-                    )
-                )
-        return message
+            tool_calls.extend(
+                {
+                    "id": tool_call.id,
+                    "tool_name": tool_call.tool_name,
+                    "tool_args": tool_call.tool_args,
+                }
+                for tool_call in item.tool_calls
+            )
+        return assistant_items(item.content, tool_calls)
 
-    async def _async_attachment_content(
+    async def _async_attachment_image(
         self, attachment: conversation.Attachment
-    ) -> chat_pb2.Content:
-        """Convert an attachment to xAI content."""
+    ) -> tuple[str, str]:
+        """Read an image attachment as ``(mime_type, base64)``."""
         path = Path(attachment.path)
         if not path.exists():
             msg = f"Attachment `{path}` does not exist"
@@ -220,53 +188,28 @@ class XAIBaseEntity(Entity):
             raise HomeAssistantError(msg)
 
         data = await self.hass.async_add_executor_job(path.read_bytes)
-        encoded = base64.b64encode(data).decode()
-        return chat_image(f"data:{attachment.mime_type};base64,{encoded}")
+        return attachment.mime_type, base64.b64encode(data).decode()
 
-    def _convert_tool_calls(
-        self, calls: list[chat_pb2.ToolCall]
-    ) -> list[llm.ToolInput]:
-        """Convert xAI tool calls into Home Assistant tool inputs."""
+    def _convert_tool_calls(self, calls: list[dict[str, Any]]) -> list[llm.ToolInput]:
+        """Convert normalized tool calls into Home Assistant tool inputs."""
         results: list[llm.ToolInput] = []
         for call in calls:
-            # If SDK provides a tool call classifier, use it to skip
-            # server-side tool calls which the server executes itself.
-            if get_tool_call_type is not None:
-                try:
-                    ttype = get_tool_call_type(call)
-                except (AttributeError, TypeError, ValueError):
-                    ttype = None
-                # Only client-side tool calls should be converted and executed
-                # by Home Assistant. Skip everything else.
-                if ttype is not None and ttype != "client_side_tool":
-                    LOGGER.debug(
-                        "Skipping server-side tool call %s of type %s",
-                        getattr(call.function, "name", None),
-                        ttype,
-                    )
-                    continue
-            if not call.function.name:
+            tool_name = call.get("tool_name")
+            if not tool_name:
                 continue
-            try:
-                arguments = (
-                    json.loads(call.function.arguments)
-                    if call.function.arguments
-                    else {}
-                )
-            except json.JSONDecodeError:
-                arguments = {"raw_arguments": call.function.arguments}
-            if call.id:
+            arguments = call.get("tool_args") or {}
+            if call_id := call.get("id"):
                 results.append(
                     llm.ToolInput(
-                        id=call.id,
-                        tool_name=call.function.name,
+                        id=call_id,
+                        tool_name=tool_name,
                         tool_args=arguments,
                     )
                 )
             else:
                 results.append(
                     llm.ToolInput(
-                        tool_name=call.function.name,
+                        tool_name=tool_name,
                         tool_args=arguments,
                     )
                 )
@@ -274,11 +217,10 @@ class XAIBaseEntity(Entity):
 
     def _build_tools(
         self, chat_log: conversation.ChatLog, options: dict[str, Any]
-    ) -> list[chat_pb2.Tool] | None:
+    ) -> list[dict[str, Any]] | None:
         """Create tool definitions for the xAI request."""
-        tools: list[chat_pb2.Tool] = []
+        tools: list[dict[str, Any]] = []
 
-        # Add Home Assistant client-side tools
         if chat_log.llm_api:
             serializer = (
                 chat_log.llm_api.custom_serializer
@@ -288,7 +230,7 @@ class XAIBaseEntity(Entity):
             for tool in chat_log.llm_api.tools:
                 try:
                     tools.append(
-                        chat_tool(
+                        function_tool(
                             name=tool.name,
                             description=tool.description or "",
                             parameters=format_tool_parameters(
@@ -301,12 +243,8 @@ class XAIBaseEntity(Entity):
                         "Skipping Home Assistant tool %s for xAI", tool.name
                     )
 
-        # Add xAI agentic tools when search is enabled
         if options.get(CONF_LIVE_SEARCH, RECOMMENDED_LIVE_SEARCH):
-            if web_search is not None:
-                tools.append(web_search())
-            if x_search is not None:
-                tools.append(x_search())
+            tools.extend(live_search_tools())
 
         return tools if tools else None
 
@@ -340,184 +278,64 @@ class XAIBaseEntity(Entity):
 
         return RECOMMENDED_IMAGE_MODEL
 
-    def _notify_chat_log_assistant_delta(
-        self,
-        chat_log: Any,
-        content: Any,
+    def _notify_chat_log_server_tool_call(
+        self, chat_log: Any, tool_call: dict[str, Any]
     ) -> None:
-        """Notify listeners about assistant output."""
-        if not (listener := chat_log.delta_listener):
-            return
-
-        delta: dict[str, Any] = {"role": "assistant"}
-        if content.content is not None:
-            delta["content"] = content.content
-        if content.thinking_content is not None:
-            delta["thinking_content"] = content.thinking_content
-        if content.tool_calls is not None:
-            delta["tool_calls"] = content.tool_calls
-
-        listener(chat_log, delta)
-
-    def _notify_chat_log_tool_result(
-        self,
-        chat_log: Any,
-        tool_result: Any,
-    ) -> None:
-        """Notify listeners about tool results."""
-        if not (listener := chat_log.delta_listener):
-            return
-
-        listener(
-            chat_log,
-            {
-                "role": "tool_result",
-                "agent_id": tool_result.agent_id,
-                "tool_call_id": tool_result.tool_call_id,
-                "tool_name": tool_result.tool_name,
-                "tool_result": tool_result.tool_result,
-            },
-        )
-
-    def _notify_chat_log_server_tool_call(self, chat_log: Any, tool_call: Any) -> None:
         """Notify listeners about a server-side tool call invocation."""
         if not (listener := chat_log.delta_listener):
             return
-
-        # Try to provide a concise representation of the tool call
-        try:
-            tool_name = tool_call.function.name
-        except AttributeError:
-            tool_name = None
-
-        try:
-            if tool_call.function.arguments:
-                tool_args = json.loads(tool_call.function.arguments)
-            else:
-                tool_args = {}
-        except json.JSONDecodeError:
-            raw_args = getattr(tool_call.function, "arguments", None)
-            tool_args = {"raw_arguments": raw_args}
-
-        # Optionally annotate the tool type if the SDK helper is available
-        tool_type = None
-        if get_tool_call_type is not None:
-            try:
-                tool_type = get_tool_call_type(tool_call)
-            except (AttributeError, TypeError, ValueError):
-                tool_type = None
 
         listener(
             chat_log,
             {
                 "role": "server_tool_call",
-                "tool_call_id": getattr(tool_call, "id", None),
-                "tool_name": tool_name,
-                "tool_args": tool_args,
-                "tool_type": tool_type,
+                "tool_call_id": tool_call.get("id"),
+                "tool_name": tool_call.get("tool_name"),
+                "tool_args": tool_call.get("tool_args") or {},
+                "tool_type": tool_call.get("tool_type"),
             },
         )
 
-    async def _async_stream_chat_response(  # noqa: PLR0915
+    async def _async_stream_chat_response(
         self,
         chat_log: conversation.ChatLog,
-        chat_request: Any,
-    ) -> tuple[Any, bool, bool]:
+        payload: dict[str, Any],
+    ) -> dict[str, int | None] | None:
         """Stream the response from xAI and feed it into the chat log."""
-        final_response: Any | None = None
-        streamed_output = False
-        streamed_tool_call = False
+        client = self.entry.runtime_data
+        parser = ResponseStreamParser()
 
-        async def _delta_stream(  # noqa: PLR0912
-            request: Any = chat_request,
-        ) -> AsyncGenerator[dict[str, Any]]:
-            nonlocal final_response, streamed_output, streamed_tool_call
-            assistant_started = False
-
-            async for response, chunk in request.stream():
-                final_response = response
-
-                for choice in chunk.choices:
-                    emitted_delta = False
-
-                    if choice.content:
-                        if not assistant_started:
-                            yield {"role": "assistant"}
-                            assistant_started = True
-                        yield {"content": choice.content}
-                        streamed_output = True
-                        emitted_delta = True
-
-                    if choice.reasoning_content:
-                        if not assistant_started:
-                            yield {"role": "assistant"}
-                            assistant_started = True
-                        yield {"thinking_content": choice.reasoning_content}
-                        streamed_output = True
-                        emitted_delta = True
-
-                    if choice.tool_calls:
-                        tool_inputs = self._convert_tool_calls(list(choice.tool_calls))
-                        if tool_inputs:
-                            if not assistant_started:
-                                yield {"role": "assistant"}
-                                assistant_started = True
-                            yield {"tool_calls": tool_inputs}
-                            streamed_tool_call = True
-                            emitted_delta = True
-
-                    if (
-                        not assistant_started
-                        and choice.role == chat_pb2.MessageRole.ROLE_ASSISTANT
-                        and not emitted_delta
-                    ):
-                        yield {"role": "assistant"}
-                        assistant_started = True
-
-                # Surface server-side tool calls present in the chunk (agentic API)
-                # These are visible when using xAI agentic tool calling; only
-                # surface them as notifications — the server already executed
-                # these tools and their outputs are not directly returned.
-                if getattr(chunk, "tool_calls", None):
-                    for tool_call in chunk.tool_calls:
-                        # If the SDK helper classifies the tool call and it's a
-                        # client-side tool, skip here (it will be handled via
-                        # choice.tool_calls/client-side flow). Otherwise, surface it.
-                        ttype = None
-                        if get_tool_call_type is not None:
-                            try:
-                                ttype = get_tool_call_type(tool_call)
-                            except (AttributeError, TypeError, ValueError):
-                                ttype = None
-                        if ttype == "client_side_tool":
+        async def _delta_stream() -> AsyncGenerator[dict[str, Any]]:
+            async for event in client.stream_events(payload):
+                for delta in parser.feed(event):
+                    if server_tool := delta.get("server_tool_call"):
+                        self._notify_chat_log_server_tool_call(chat_log, server_tool)
+                        continue
+                    if raw_calls := delta.get("tool_calls"):
+                        converted = self._convert_tool_calls(raw_calls)
+                        if not converted:
                             continue
-                        # Notify listeners about the server-side tool call
-                        self._notify_chat_log_server_tool_call(chat_log, tool_call)
+                        yield {**delta, "tool_calls": converted}
+                        continue
+                    yield delta
 
-            if final_response is not None:
-                yield {"native": final_response}
+            if parser.response is None and parser.usage is None:
+                msg = "xAI stream returned no response"
+                raise XAIClientError(msg)
 
         async for _ in chat_log.async_add_delta_content_stream(
             self.entity_id, _delta_stream()
         ):
             pass
 
-        if final_response is None:
-            msg = "xAI stream returned no response"
-            raise HomeAssistantError(msg)
+        return parser.usage
 
-        return final_response, streamed_output, streamed_tool_call
-
-    def _log_usage(self, chat_log: conversation.ChatLog, response: Any) -> None:
+    def _log_usage(
+        self,
+        chat_log: conversation.ChatLog,
+        usage: dict[str, int | None] | None,
+    ) -> None:
         """Record token usage statistics if available."""
-        usage = getattr(response, "usage", None)
         if usage is None:
             return
-        chat_log.async_trace(
-            {
-                "stats": {
-                    "input_tokens": getattr(usage, "prompt_tokens", None),
-                    "output_tokens": getattr(usage, "completion_tokens", None),
-                }
-            }
-        )
+        chat_log.async_trace({"stats": usage})
