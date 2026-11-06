@@ -9,7 +9,7 @@
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/fabianluque/xai_conversation/issues",
   "requirements": [
-    "xai-sdk==1.12.2"
+    "xai-sdk==1.21.0"
   ],
   "version": "0.1.0"
 }

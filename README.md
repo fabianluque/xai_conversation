@@ -47,7 +47,7 @@ Interact with xAI's Grok models directly from Home Assistant's Conversation plat
 
 1. Copy the `custom_components/xai_conversation` folder into your Home Assistant `config/custom_components` directory.
 2. Restart Home Assistant to load the new integration.
-3. (Optional) If you manage dependencies manually, ensure `xai-sdk==1.12.2` is available to Home Assistant.
+3. (Optional) If you manage dependencies manually, ensure `xai-sdk==1.21.0` is available to Home Assistant.
 
 ## ⚙️ Configuration
 
