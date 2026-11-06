@@ -13,6 +13,8 @@ ignore = [
     "D212", # multi-line-summary-first-line (incompatible with formatter)
     "COM812", # incompatible with formatter
     "ISC001", # incompatible with formatter
+    "CPY001", # no copyright headers in this repo
+    "ASYNC240", # Path.exists() in async helpers; IO is already offloaded
 ]
 
 [lint.flake8-pytest-style]

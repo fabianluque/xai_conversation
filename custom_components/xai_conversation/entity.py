@@ -280,11 +280,7 @@ class XAIBaseEntity(Entity):
 
         # Add Home Assistant client-side tools
         if chat_log.llm_api:
-            serializer = (
-                chat_log.llm_api.custom_serializer
-                if chat_log.llm_api.custom_serializer
-                else llm.selector_serializer
-            )
+            serializer = chat_log.llm_api.custom_serializer or llm.selector_serializer
             for tool in chat_log.llm_api.tools:
                 try:
                     tools.append(
@@ -308,7 +304,7 @@ class XAIBaseEntity(Entity):
             if x_search is not None:
                 tools.append(x_search())
 
-        return tools if tools else None
+        return tools or None
 
     def _resolve_reasoning_effort(
         self, model: str, options: dict[str, Any]
