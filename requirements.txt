@@ -1,7 +1,7 @@
 colorlog==6.12.0
 homeassistant==2026.2.3
 pip>=21.3.1
-probatio>=0.11.4
+probatio>=0.13.0
 pytest>=8.0.0
 ruff==0.16.0
 xai-sdk==1.21.0
